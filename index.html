@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GP Score — González-Passi Score</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --p:#157a5a;--pl:#e8f5f0;--pd:#0a4a36;--pm:#1a9e75;
+  --warn:#d4890a;--danger:#c0392b;--ok:#2d7a3a;
+  --s:#ffffff;--s2:#f7f6f3;--s3:#f0ede8;
+  --b:rgba(0,0,0,0.10);--b2:rgba(0,0,0,0.07);
+  --t:#18181b;--t2:#71717a;--t3:#a1a1aa;
+  --r:14px;--rm:9px;
+  --ff:'DM Sans',system-ui,sans-serif;
+  --ffs:'DM Serif Display',Georgia,serif
+}
+body{font-family:var(--ff);background:var(--s3);color:var(--t);min-height:100vh;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.app{max-width:840px;margin:0 auto;padding:1.25rem;min-height:100vh}
+.page{display:none}.page.active{display:block}
+
+/* Cards */
+.card{background:var(--s);border:1px solid var(--b2);border-radius:var(--r);padding:1.5rem;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card-flat{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:1.25rem;margin-bottom:14px}
+
+/* Type */
+h2{font-size:20px;font-weight:500;margin-bottom:1.1rem;letter-spacing:-.01em}
+h3{font-size:17px;font-weight:500;margin-bottom:.8rem;letter-spacing:-.01em}
+h4{font-size:12px;font-weight:500;color:var(--p);margin:1.1rem 0 .6rem;text-transform:uppercase;letter-spacing:.06em}
+label{font-size:14px;color:var(--t2);display:block;margin-bottom:5px;font-weight:400}
+p{font-size:15px;line-height:1.6}
+
+/* Forms */
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--b);border-radius:var(--rm);font-size:15px;background:var(--s);color:var(--t);margin-bottom:12px;font-family:var(--ff);transition:border-color .15s,box-shadow .15s}
+textarea{resize:vertical;min-height:64px}
+input[type=range]{padding:0;margin-bottom:6px;cursor:pointer;accent-color:var(--p)}
+input[type=number]{margin-bottom:0}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pm);box-shadow:0 0 0 3px rgba(26,158,117,.12)}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--rm);border:1px solid var(--b);background:var(--s);cursor:pointer;font-size:15px;color:var(--t);transition:all .15s;font-family:var(--ff);font-weight:400;letter-spacing:-.01em}
+.btn:hover{background:var(--s2);border-color:rgba(0,0,0,.18)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn-p{background:var(--p);color:#fff;border-color:var(--p);font-weight:500}
+.btn-p:hover{background:var(--pd);border-color:var(--pd)}
+.btn-sm{padding:6px 13px;font-size:13px}
+.btn-danger{color:var(--danger);border-color:transparent;background:transparent}
+.btn-danger:hover{background:#fef2f2;border-color:#fca5a5}
+
+/* Layout helpers */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.flex{display:flex}.ic{align-items:center}.gap8{gap:8px}.gap12{gap:12px}.mla{margin-left:auto}
+.mt1{margin-top:1.1rem}.mb1{margin-bottom:1.1rem}.mt05{margin-top:.6rem}
+.sep{height:1px;background:var(--b2);margin:.85rem 0}
+.t2{color:var(--t2);font-size:14px}
+.t3{color:var(--t3);font-size:13px}
+
+/* Badges */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;letter-spacing:.01em}
+.bg{background:#dcfce7;color:#166534}.ba{background:#fef3c7;color:#92400e}.br{background:#fee2e2;color:#991b1b}.bb{background:#dbeafe;color:#1e40af}.bt{background:#d1fae5;color:#065f46}.bp{background:#ede9fe;color:#4c1d95}
+
+/* Nav tabs */
+.nav{display:flex;gap:2px;margin-bottom:1.75rem;border-bottom:1px solid var(--b2)}
+.nt{padding:10px 16px;font-size:15px;border:none;background:none;cursor:pointer;color:var(--t2);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:var(--ff);transition:color .15s;letter-spacing:-.01em}
+.nt:hover{color:var(--t)}
+.nt.active{color:var(--p);border-bottom-color:var(--p);font-weight:500}
+.tc{display:none}.tc.active{display:block}
+
+/* Progress bar */
+.pb-wrap{background:var(--b2);border-radius:20px;height:6px;overflow:hidden;margin:4px 0}
+.pb-fill{height:100%;border-radius:20px;transition:width .35s cubic-bezier(.4,0,.2,1)}
+
+/* Avatars */
+.av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;flex-shrink:0}
+.av-t{background:#d1fae5;color:#065f46}.av-b{background:#dbeafe;color:#1e40af}
+
+/* Logo */
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:1.75rem;text-decoration:none}
+.logo-mark{width:36px;height:36px;background:var(--p);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-mark svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.2}
+.logo-name{font-family:var(--ffs);font-size:20px;color:var(--pd);letter-spacing:-.01em;line-height:1}
+.logo-sub{font-size:11px;color:var(--t3);letter-spacing:.02em;margin-top:1px}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem}
+.empty{text-align:center;padding:3rem 1rem;color:var(--t2);font-size:15px}
+
+/* Alerts */
+.alert{padding:10px 14px;border-radius:var(--rm);font-size:14px;margin-bottom:12px;border:1px solid transparent}
+.ai{background:#eff6ff;color:#1e40af;border-color:#bfdbfe}
+.ae{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+.as{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
+
+/* Scale buttons */
+.sc-btn{width:44px;height:44px;border-radius:var(--rm);border:1px solid var(--b);background:var(--s2);cursor:pointer;font-size:15px;font-weight:500;color:var(--t2);transition:all .15s;display:flex;align-items:center;justify-content:center;font-family:var(--ff)}
+.sc-btn:hover{border-color:var(--pm);color:var(--pm);background:#fff}
+.sc-btn.sel-0{background:#f4f4f5;border-color:#a1a1aa;color:#52525b}
+.sc-btn.sel-1{background:#fee2e2;border-color:#f87171;color:#991b1b}
+.sc-btn.sel-2{background:#fef3c7;border-color:#fbbf24;color:#92400e}
+.sc-btn.sel-3{background:#fef9c3;border-color:#eab308;color:#713f12}
+.sc-btn.sel-4{background:#d1fae5;border-color:#34d399;color:#065f46}
+.sc-btn.sel-5{background:#dcfce7;border-color:#4ade80;color:#166534}
+.scale-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+
+/* Activity rows */
+.act-row{padding:14px 0;border-bottom:1px solid var(--b2)}
+.act-row:last-child{border-bottom:none}
+.act-name{font-size:15px;margin-bottom:8px;font-weight:500;color:var(--t)}
+.act-obs{width:100%;padding:7px 10px;border:1px solid var(--b);border-radius:var(--rm);font-size:14px;background:var(--s2);color:var(--t);margin-top:6px;font-family:var(--ff)}
+.act-obs:focus{outline:none;border-color:var(--pm)}
+
+/* Area header */
+.area-header{display:flex;align-items:center;gap:12px;margin-bottom:1.1rem;padding:.9rem 1rem;background:var(--pl);border-radius:var(--rm);border:1px solid rgba(21,122,90,.15)}
+.area-num{width:32px;height:32px;background:var(--p);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:#fff;flex-shrink:0}
+
+/* Area nav pills */
+.area-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.1rem}
+.an-pill{padding:5px 12px;border-radius:20px;border:1px solid var(--b);font-size:13px;cursor:pointer;background:var(--s);color:var(--t2);font-family:var(--ff);transition:all .15s;font-weight:400}
+.an-pill:hover{border-color:var(--pm);color:var(--pm)}
+.an-pill.done{background:var(--pl);color:var(--pd);border-color:rgba(21,122,90,.3);font-weight:500}
+.an-pill.current{background:var(--p);color:#fff;border-color:var(--p);font-weight:500}
+.an-pill.locked{background:var(--s2);color:var(--t3);border-color:var(--b2);cursor:default}
+
+/* Modals */
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-start;justify-content:center;padding:1.25rem;overflow-y:auto;backdrop-filter:blur(2px)}
+.modal-box{background:var(--s);border-radius:var(--r);padding:1.75rem;width:100%;max-width:540px;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+
+/* Scale legend */
+.scale-legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;background:var(--s2);border-radius:var(--rm);border:1px solid var(--b2)}
+.sl-item{font-size:12px;display:flex;align-items:center;gap:5px;color:var(--t2)}
+
+/* Patient rows */
+.patient-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--b2)}
+.patient-row:last-child{border-bottom:none}
+
+/* Spinner */
+.spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+.spinner-dark{border-color:rgba(0,0,0,.12);border-top-color:var(--p)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Loading overlay */
+.loading-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.9);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(4px)}
+.loading-overlay.active{display:flex}
+
+/* Score groups */
+.score-group{background:var(--s);border:1px solid var(--b2);border-radius:var(--r);padding:1.25rem;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.score-group-label{font-size:11px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.07em;font-weight:500}
+.score-group-val{font-size:32px;font-weight:500;font-family:var(--ffs);letter-spacing:-.02em}
+
+/* Ficha inputs */
+.eaton-btn{padding:8px 18px;border-radius:var(--rm);border:1px solid var(--b);background:var(--s2);cursor:pointer;font-size:15px;font-weight:500;font-family:var(--ff);transition:all .15s}
+.eaton-btn:hover{border-color:var(--pm)}
+.eaton-btn.sel{background:var(--p);color:#fff;border-color:var(--p)}
+.slider-row{margin-bottom:14px}
+.slider-label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:5px;color:var(--t2)}
+.slider-val{font-weight:500;color:var(--pd);font-size:15px}
+.yn-btn{padding:8px 22px;border-radius:var(--rm);border:1px solid var(--b);background:var(--s2);cursor:pointer;font-size:15px;font-family:var(--ff);transition:all .15s}
+.yn-btn:hover{border-color:var(--pm)}
+.yn-btn.sel-si{background:#d1fae5;border-color:#34d399;color:#065f46;font-weight:500}
+.yn-btn.sel-no{background:#f4f4f5;border-color:#a1a1aa;color:#52525b;font-weight:500}
+.comp-check{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--b2);font-size:15px}
+.comp-check:last-child{border-bottom:none}
+.comp-check input[type=checkbox]{width:auto;margin-bottom:0;accent-color:var(--p);width:16px;height:16px;cursor:pointer}
+
+/* Locked area */
+.locked-area{background:var(--s2);border-radius:var(--r);padding:2.5rem 2rem;text-align:center;border:1px dashed rgba(0,0,0,.14)}
+
+@media(max-width:520px){
+  .grid2{grid-template-columns:1fr}
+  .grid3{grid-template-columns:1fr 1fr}
+  .sc-btn{width:40px;height:40px;font-size:14px}
+  .app{padding:1rem}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner spinner-dark" style="width:28px;height:28px;border-width:3px"></div>
+  <div style="font-size:15px;color:var(--t2)" id="loading-msg">Cargando...</div>
+</div>
+
+<div class="app">
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div style="padding-top:2rem">
+  <div class="logo"><div class="logo-mark"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div><div><div class="logo-name">GP Score</div><div class="logo-sub">González-Passi Score</div></div></div>
+  <div class="card" style="text-align:center;padding:3rem 2rem">
+    <div style="font-family:var(--ffs);font-size:36px;color:var(--pd);margin-bottom:6px;letter-spacing:-.02em">GP Score</div>
+    <div style="font-size:15px;font-weight:500;color:var(--t);margin-bottom:6px">González-Passi Score</div>
+    <div class="t2" style="margin-bottom:2.5rem;font-size:14px">Evaluación funcional de extremidad superior</div>
+    <div class="grid2" style="max-width:360px;margin:0 auto;gap:14px">
+      <button class="btn btn-p" style="justify-content:center;padding:14px 20px;font-size:15px" onclick="showLogin('medico')">Soy médico</button>
+      <button class="btn" style="justify-content:center;padding:14px 20px;font-size:15px" onclick="showLogin('paciente')">Soy paciente</button>
+    </div>
+    <div class="mt1"><button class="btn btn-sm" onclick="go('register')">Crear nueva cuenta</button></div>
+  </div>
+  <div style="margin-top:1rem;padding:1rem 1.25rem;background:#fffbeb;border:1px solid #fde68a;border-radius:var(--r)">
+    <div style="font-size:11px;font-weight:500;color:#92400e;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Modo testeo</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm" style="border-color:#fbbf24;color:#92400e;background:#fef3c7" onclick="loginDemo('medico')">Médico demo</button>
+      <button class="btn btn-sm" style="border-color:#fbbf24;color:#92400e;background:#fef3c7" onclick="loginDemo('paciente')">Paciente demo</button>
+    </div>
+  </div>
+  <div class="t3" style="text-align:center;margin-top:1rem">Datos en la nube · Supabase</div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div class="page" id="page-login">
+  <div class="topbar"><button class="btn btn-sm" onclick="go('home')">← Volver</button><span class="t2" id="login-rl"></span></div>
+  <h2>Iniciar sesión</h2>
+  <div class="card">
+    <label>Correo</label><input type="email" id="le" placeholder="correo@ejemplo.com">
+    <label>Contraseña</label><input type="password" id="lp" placeholder="••••••">
+    <div id="lerr" class="alert ae" style="display:none"></div>
+    <button class="btn btn-p" style="width:100%;justify-content:center" id="btn-login" onclick="doLogin()">Entrar</button>
+    <div style="text-align:center;margin-top:12px"><button class="btn btn-sm" onclick="go('register')">¿Sin cuenta? Crear una</button></div>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div class="page" id="page-register">
+  <div class="topbar"><button class="btn btn-sm" onclick="go('home')">← Volver</button></div>
+  <h2>Crear cuenta</h2>
+  <div class="card">
+    <label>Tipo</label>
+    <select id="rt" onchange="toggleRegType()"><option value="paciente">Paciente</option><option value="medico">Médico / Terapeuta</option></select>
+    <div class="grid2">
+      <div><label>Nombre</label><input id="rn" placeholder="Nombre"></div>
+      <div><label>Apellido</label><input id="ra" placeholder="Apellido"></div>
+    </div>
+    <label>Fecha nacimiento</label><input type="date" id="rd">
+    <div id="rex-p"><label>RUT</label><input id="rr" placeholder="12.345.678-9"></div>
+    <div id="rex-m" style="display:none">
+      <label>Especialidad</label><input id="res" placeholder="Ej: Cirugía de mano">
+      <label>Código profesional</label><input id="rec" placeholder="SIS-XXXXX">
+    </div>
+    <label>Correo</label><input type="email" id="rem" placeholder="correo@ejemplo.com">
+    <label>Contraseña</label><input type="password" id="rep" placeholder="Mínimo 6 caracteres">
+    <div id="rerr" class="alert ae" style="display:none"></div>
+    <button class="btn btn-p" style="width:100%;justify-content:center" id="btn-register" onclick="doRegister()">Crear cuenta</button>
+  </div>
+</div>
+
+<!-- MÉDICO -->
+<div class="page" id="page-medico">
+  <div class="topbar">
+    <div class="logo" style="margin:0"><div class="logo-mark"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div><div><div class="logo-name">GP Score</div><div class="logo-sub">González-Passi</div></div></div>
+    <div class="flex ic gap8"><span class="t2" id="med-nl"></span><button class="btn btn-sm" onclick="doLogout()">Salir</button></div>
+  </div>
+  <div class="nav">
+    <button class="nt active" onclick="mTab('pacientes',this)">Pacientes</button>
+    <button class="nt" onclick="mTab('resultados',this)">Resultados</button>
+    <button class="nt" onclick="mTab('perfil',this)">Mi perfil</button>
+  </div>
+  <div class="tc active" id="mt-pacientes">
+    <div class="flex ic mb1"><h2 style="margin:0">Pacientes</h2><button class="btn btn-sm btn-p mla" onclick="openAssign()">+ Vincular</button></div>
+    <div class="card" id="pac-list"></div>
+  </div>
+  <div class="tc" id="mt-resultados"><div id="res-cont"></div></div>
+  <div class="tc" id="mt-perfil"><h2>Mi perfil</h2><div class="card" id="med-prof"></div></div>
+</div>
+
+<!-- PACIENTE -->
+<div class="page" id="page-paciente">
+  <div class="topbar">
+    <div class="logo" style="margin:0"><div class="logo-mark"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div><div><div class="logo-name">GP Score</div><div class="logo-sub">González-Passi</div></div></div>
+    <div class="flex ic gap8"><span class="t2" id="pac-nl"></span><button class="btn btn-sm" onclick="doLogout()">Salir</button></div>
+  </div>
+  <div class="nav">
+    <button class="nt active" onclick="pTab('inicio',this)">Inicio</button>
+    <button class="nt" onclick="pTab('historial',this)">Historial</button>
+    <button class="nt" onclick="pTab('perfil',this)">Mi perfil</button>
+  </div>
+  <div class="tc active" id="pt-inicio">
+    <div id="pac-banner" class="mb1"></div>
+    <button class="btn btn-p" style="width:100%;justify-content:center;padding:16px 20px;font-size:16px;border-radius:var(--r)" onclick="startEval()">Iniciar nueva evaluación</button>
+  </div>
+  <div class="tc" id="pt-historial"><h2>Historial</h2><div id="hist-list"></div></div>
+  <div class="tc" id="pt-perfil"><h2>Mi perfil</h2><div class="card" id="pac-prof"></div></div>
+</div>
+
+<!-- EVALUACIÓN -->
+<div class="page" id="page-eval">
+  <div class="topbar">
+    <button class="btn btn-sm" onclick="if(confirm('¿Salir? Se perderá el progreso.'))go('paciente')">← Salir</button>
+    <span class="t2" id="eval-prog-lbl"></span>
+  </div>
+  <div class="pb-wrap mb1"><div class="pb-fill" id="eval-pbar" style="background:var(--p);width:0%"></div></div>
+  <div class="area-nav" id="area-nav"></div>
+  <div id="eval-content"></div>
+  <div class="flex gap8 mt1">
+    <button class="btn btn-sm" id="btn-prev" onclick="prevArea()">← Anterior</button>
+    <button class="btn btn-sm btn-p mla" id="btn-next" onclick="nextArea()">Siguiente →</button>
+  </div>
+</div>
+
+<!-- RESULTADO -->
+<div class="page" id="page-result">
+  <div class="topbar">
+    <button class="btn btn-sm" onclick="go('paciente')">← Volver</button>
+    <span class="badge bt">Evaluación completada</span>
+  </div>
+  <div id="result-content"></div>
+</div>
+
+<!-- MODAL VINCULAR -->
+<div class="modal-overlay" id="assign-modal">
+  <div class="modal-box">
+    <h3>Vincular paciente</h3>
+    <p class="t2" style="margin-bottom:1rem">Ingresa el correo del paciente registrado.</p>
+    <label>Correo</label><input id="assign-em" type="email" placeholder="correo@paciente.com">
+    <div id="assign-err" class="alert ae" style="display:none"></div>
+    <div id="assign-ok" class="alert as" style="display:none"></div>
+    <div class="flex gap8 mt1">
+      <button class="btn" onclick="closeModal('assign-modal')">Cancelar</button>
+      <button class="btn btn-p mla" id="btn-assign" onclick="doAssign()">Vincular</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FICHA CLÍNICA -->
+<div class="modal-overlay" id="ficha-modal">
+  <div class="modal-box">
+    <h3>Ficha clínica del paciente</h3>
+    <p class="t2" style="margin-bottom:1rem">Datos clínicos pre-operatorios y operatorios. Se guardan una sola vez.</p>
+
+    <h4>Preprotésico</h4>
+
+    <label>Clasificación de Eaton</label>
+    <div class="flex gap8 mb1" id="eaton-btns">
+      <button class="eaton-btn" onclick="setEaton('I',this)">I</button>
+      <button class="eaton-btn" onclick="setEaton('II',this)">II</button>
+      <button class="eaton-btn" onclick="setEaton('III',this)">III</button>
+      <button class="eaton-btn" onclick="setEaton('IV',this)">IV</button>
+    </div>
+
+    <label>Kapandji (0–10)</label>
+    <div class="slider-row">
+      <div class="slider-label"><span>0</span><span class="slider-val" id="kap-val">—</span><span>10</span></div>
+      <input type="range" min="0" max="10" step="1" id="kap-slider" oninput="document.getElementById('kap-val').textContent=this.value">
+    </div>
+
+    <label style="margin-top:.5rem">Dinamometría</label>
+    <div class="slider-row">
+      <div class="slider-label"><span>Puño</span><span class="slider-val" id="dino-puno-val">—</span><span>70 kg</span></div>
+      <input type="range" min="0" max="70" step="1" id="dino-puno" oninput="document.getElementById('dino-puno-val').textContent=this.value+' kg'">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label"><span>Pinza digital</span><span class="slider-val" id="dino-pd-val">—</span><span>70 kg</span></div>
+      <input type="range" min="0" max="70" step="1" id="dino-pd" oninput="document.getElementById('dino-pd-val').textContent=this.value+' kg'">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label"><span>Pinza lateral</span><span class="slider-val" id="dino-pl-val">—</span><span>70 kg</span></div>
+      <input type="range" min="0" max="70" step="1" id="dino-pl" oninput="document.getElementById('dino-pl-val').textContent=this.value+' kg'">
+    </div>
+
+    <h4>Operatorio</h4>
+
+    <label>Tipo de prótesis</label>
+    <select id="tipo-protesis" onchange="document.getElementById('otra-protesis-wrap').style.display=this.value==='otra'?'block':'none'">
+      <option value="">Seleccionar...</option>
+      <option value="dual">Dual</option>
+      <option value="no_dual">No dual</option>
+      <option value="otra">Otra</option>
+    </select>
+    <div id="otra-protesis-wrap" style="display:none"><label>Especificar</label><input id="otra-protesis" placeholder="Tipo de prótesis..."></div>
+
+    <div class="grid3" style="gap:10px;margin-bottom:10px">
+      <div><label>Vástago</label><input type="number" id="vastago-n" placeholder="n°" style="width:100%;padding:7px 8px;border:.5px solid var(--b);border-radius:var(--rm);font-size:13px;background:var(--s);color:var(--t)"></div>
+      <div><label>Cuello</label><input type="number" id="cuello-n" placeholder="n°" style="width:100%;padding:7px 8px;border:.5px solid var(--b);border-radius:var(--rm);font-size:13px;background:var(--s);color:var(--t)"></div>
+      <div><label>Copa</label><input type="number" id="copa-n" placeholder="n°" style="width:100%;padding:7px 8px;border:.5px solid var(--b);border-radius:var(--rm);font-size:13px;background:var(--s);color:var(--t)"></div>
+    </div>
+
+    <label>Fecha de cirugía</label>
+    <input type="date" id="fecha-cirugia" style="margin-bottom:10px">
+
+    <label>Mano dominante operada</label>
+    <div class="flex gap8 mb1" id="mano-dom-btns">
+      <button class="yn-btn" onclick="setYN('mano-dom-btns',true,this)">Sí</button>
+      <button class="yn-btn" onclick="setYN('mano-dom-btns',false,this)">No</button>
+    </div>
+
+    <div id="ficha-err" class="alert ae" style="display:none"></div>
+    <div id="ficha-ok" class="alert as" style="display:none"></div>
+    <div class="flex gap8 mt1">
+      <button class="btn" onclick="closeModal('ficha-modal')">Cerrar</button>
+      <button class="btn btn-p mla" id="btn-ficha" onclick="saveFicha()">Guardar ficha</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ÁREA X (ARTROPLASTIA) -->
+<div class="modal-overlay" id="areax-modal">
+  <div class="modal-box">
+    <h3>X — Evaluación de la artroplastia</h3>
+    <p class="t2" style="margin-bottom:1rem">Completado por el médico tratante para esta evaluación.</p>
+
+    <div class="scale-legend">${[1,2,3,4,5].map((v,i)=>`<div class="sl-item"><div class="sc-btn sel-${v}" style="pointer-events:none;width:22px;height:22px;font-size:10px">${v}</div><span class="t2">${['Pésimo','Malo','Regular','Bueno','Excelente'][i]}</span></div>`).join('')}</div>
+
+    <div class="act-row">
+      <div class="act-name">Vástago</div>
+      <div class="scale-wrap" id="ax-vastago"></div>
+    </div>
+    <div class="act-row">
+      <div class="act-name">Copa</div>
+      <div class="scale-wrap" id="ax-copa"></div>
+    </div>
+    <div class="act-row">
+      <div class="act-name">Cuello</div>
+      <div class="scale-wrap" id="ax-cuello"></div>
+    </div>
+    <div class="act-row">
+      <div class="act-name">Cicatriz</div>
+      <div class="scale-wrap" id="ax-cicatriz"></div>
+    </div>
+    <div class="act-row">
+      <div class="act-name">Partes blandas</div>
+      <div class="scale-wrap" id="ax-partes"></div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="act-row">
+      <div class="act-name" style="margin-bottom:8px">¿Luxado?</div>
+      <div class="flex gap8" id="ax-luxado-btns">
+        <button class="yn-btn" onclick="setYN('ax-luxado-btns',true,this)">Sí</button>
+        <button class="yn-btn" onclick="setYN('ax-luxado-btns',false,this)">No</button>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-name" style="margin-bottom:8px">¿Infección?</div>
+      <div class="flex gap8" id="ax-infeccion-btns">
+        <button class="yn-btn" onclick="setYN('ax-infeccion-btns',true,this)">Sí</button>
+        <button class="yn-btn" onclick="setYN('ax-infeccion-btns',false,this)">No</button>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+    <div class="act-name" style="margin-bottom:8px">Complicaciones (marcar si aplica)</div>
+    <div id="ax-complicaciones">
+      <div class="comp-check"><input type="checkbox" id="ax-dequervain"><label for="ax-dequervain" style="color:var(--t);font-size:13px;cursor:pointer">De Quervain</label></div>
+      <div class="comp-check"><input type="checkbox" id="ax-rotura"><label for="ax-rotura" style="color:var(--t);font-size:13px;cursor:pointer">Rotura tendinosa</label></div>
+      <div class="comp-check"><input type="checkbox" id="ax-calcif"><label for="ax-calcif" style="color:var(--t);font-size:13px;cursor:pointer">Calcificación heterotópica</label></div>
+    </div>
+    <div style="margin-top:8px">
+      <label>Otra complicación</label>
+      <input id="ax-otra" placeholder="Descripción (opcional)">
+    </div>
+
+    <div id="areax-err" class="alert ae" style="display:none"></div>
+    <div id="areax-ok" class="alert as" style="display:none"></div>
+    <div class="flex gap8 mt1">
+      <button class="btn" onclick="closeModal('areax-modal')">Cancelar</button>
+      <button class="btn btn-p mla" id="btn-areax" onclick="saveAreaX()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+const SUPA_URL='https://aneawhcplvtlxtdiqazi.supabase.co';
+const SUPA_KEY='sb_publishable_b2XyflL3o_BmCdUWDF7Mow_ET9fYzid';
+const db=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+const AREAS=[
+  {id:1,num:"I",name:"Actividades domésticas",type:"scale",acts:["Usar utensilios de cocina","Cortar con elemento cortante","Tomar un plato / montar mesa","Tomar un vaso o botella","Abrir tapa rosca","Tomar un sartén","Tomar hervidor de agua","Usar electrodoméstico (batidora manual)","Almacenar alimentos"]},
+  {id:2,num:"II",name:"Higiene y cuidado personal",type:"scale",acts:["Lavado de dientes","Peinado","Afeitarse / depilarse","Secado con toalla","Uso de secador de pelo","Pintura de uñas","Corte de uñas","Maquillaje","Usar sombrero"]},
+  {id:3,num:"III",name:"Habitualidad",type:"scale",acts:["Control remoto / sensores electrónicos","Teléfono: escribir / tomar","Tomar volante / cambio de marcha","Cinturón de seguridad","Tomarse en microbús / metro","Sujetar un libro","Llevar bolsa de supermercado","Cargar productos en supermercado","Fumar un cigarrillo","Tomar fotografía","Enchufar un equipo"]},
+  {id:4,num:"IV",name:"Actividad laboral",type:"laboral"},
+  {id:5,num:"V",name:"Deportes y actividad física",type:"scale",acts:["Deportes con implementos","Pilates / yoga","Pádel / tenis / golf / ski","Artes marciales","Uso de pesas / barras","Básquet / vóley","Bicicleta / scooter","Montar a caballo","Bastón de trekking","Jugar pool / ping pong","Uso de armas","Otro deporte"]},
+  {id:6,num:"VI",name:"Hobbies",type:"scale",acts:["Escribir con lápiz","Pintar","Esculpir / tallar","Armar puzzle / LEGO","Usar cartas de naipes","Juegos con piezas (ajedrez, etc.)","Uso de herramientas"]},
+  {id:7,num:"VII",name:"Situación de vida",type:"scale",acts:["Situación económica","Situación social / amistades / entorno","Vivienda / hogar","Familia / compañía","Vecindad / seguridad","Vacaciones / distracciones"]},
+  {id:8,num:"VIII",name:"Enfermedades asociadas",type:"scale",acts:["Psiquiátricas","Metabólicas","Hormonales","Oncológicas","Músculo esqueléticas","Otra enfermedad"]},
+  {id:9,num:"IX",name:"Otras actividades",type:"scale",acts:["Cuidar / jugar con menores","Cuidado de adulto mayor","Manejo de personas altamente dependientes","Uso de ayudas técnicas"]},
+  {id:10,num:"X",name:"Evaluación de la artroplastia",type:"artroplastia"}
+];
+
+const SL=["No evalúa","No puede / pésimo","Casi no puede / malo","Con dificultad / regular","Mínimas molestias / bueno","Sin dificultad / excelente"];
+const SC=["sel-0","sel-1","sel-2","sel-3","sel-4","sel-5"];
+const AX_FIELDS=['vastago','copa','cuello','cicatriz','partes_blandas'];
+
+let S={cu:null,role:null,ev:null,editingEvalId:null,editingPatientId:null,fichaData:{}};
+
+// ---- HELPERS ----
+function loading(on,msg='Guardando...'){document.getElementById('loading-msg').textContent=msg;document.getElementById('loading-overlay').classList.toggle('active',on)}
+function go(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById('page-'+p).classList.add('active');window.scrollTo(0,0);if(p==='medico')renderMedico();if(p==='paciente')renderPaciente()}
+function closeModal(id){document.getElementById(id).style.display='none'}
+function openModal(id){document.getElementById(id).style.display='flex'}
+function ini(u){return((u.nombre||'?')[0]+(u.apellido||'?')[0]).toUpperCase()}
+function age(d){if(!d)return'—';return Math.floor((new Date()-new Date(d))/(365.25*864e5))}
+function fdate(iso){return new Date(iso).toLocaleDateString('es-CL',{day:'numeric',month:'short',year:'numeric'})}
+function scCls(s){return s>=75?'bg':s>=50?'ba':'br'}
+function scLbl(s){return s>=75?'Bueno':s>=50?'Moderado':'Bajo'}
+function scCol(s){return s>=75?'var(--ok)':s>=50?'var(--warn)':'var(--danger)'}
+function showLogin(r){S.role=r;document.getElementById('login-rl').textContent=r==='medico'?'Acceso médico':'Acceso paciente';document.getElementById('lerr').style.display='none';go('login')}
+function toggleRegType(){const v=document.getElementById('rt').value;document.getElementById('rex-p').style.display=v==='paciente'?'block':'none';document.getElementById('rex-m').style.display=v==='medico'?'block':'none'}
+function doLogout(){db.auth.signOut();S.cu=null;S.role=null;go('home')}
+
+function setYN(groupId,val,btn){
+  document.querySelectorAll('#'+groupId+' .yn-btn').forEach(b=>{b.className='yn-btn'});
+  btn.className='yn-btn '+(val?'sel-si':'sel-no');
+  btn.dataset.val=val?'true':'false';
+}
+function getYN(groupId){
+  const sel=document.querySelector('#'+groupId+' .yn-btn[data-val]');
+  if(!sel||!('val' in sel.dataset)) return null;
+  return sel.dataset.val==='true';
+}
+
+function renderScaleWrap(containerId,field,currentVal){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML=[1,2,3,4,5].map(v=>`<button class="sc-btn ${currentVal===v?SC[v]:''}" onclick="setAXField('${field}',${v},this)" title="${SL[v]}">${v}</button>`).join('');
+}
+function setAXField(field,val,btn){
+  S.axData=S.axData||{};
+  S.axData[field]=val;
+  const containerId='ax-'+field==='vastago'?'ax-vastago':field==='copa'?'ax-copa':field==='cuello'?'ax-cuello':field==='cicatriz'?'ax-cicatriz':'ax-partes';
+  // re-render just that wrap
+  const map={vastago:'ax-vastago',copa:'ax-copa',cuello:'ax-cuello',cicatriz:'ax-cicatriz',partes_blandas:'ax-partes'};
+  renderScaleWrap(map[field],field,val);
+}
+
+// ---- AUTH ----
+async function doRegister(){
+  const tipo=document.getElementById('rt').value,n=document.getElementById('rn').value.trim(),a=document.getElementById('ra').value.trim(),
+    em=document.getElementById('rem').value.trim().toLowerCase(),ps=document.getElementById('rep').value,err=document.getElementById('rerr');
+  if(!n||!a||!em||!ps){err.style.display='block';err.textContent='Completa todos los campos';return}
+  if(ps.length<6){err.style.display='block';err.textContent='Contraseña mínimo 6 caracteres';return}
+  err.style.display='none';
+  const btn=document.getElementById('btn-register');btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Creando...';
+  try{
+    const {data:auth,error:e1}=await db.auth.signUp({email:em,password:ps});
+    if(e1)throw e1;
+    const perfil={id:auth.user.id,tipo,nombre:n,apellido:a,email:em,dob:document.getElementById('rd').value||null,
+      rut:tipo==='paciente'?document.getElementById('rr').value:null,
+      especialidad:tipo==='medico'?document.getElementById('res').value:null,
+      codigo:tipo==='medico'?document.getElementById('rec').value:null};
+    const {error:e2}=await db.from('usuarios').insert(perfil);
+    if(e2)throw e2;
+    S.cu=perfil;go(tipo);
+  }catch(e){err.style.display='block';err.textContent=e.message.includes('already registered')?'Ya existe una cuenta con ese correo':e.message}
+  finally{btn.disabled=false;btn.textContent='Crear cuenta'}
+}
+
+async function doLogin(){
+  const em=document.getElementById('le').value.trim().toLowerCase(),ps=document.getElementById('lp').value,err=document.getElementById('lerr');
+  err.style.display='none';
+  const btn=document.getElementById('btn-login');btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Entrando...';
+  try{
+    const {data,error:e1}=await db.auth.signInWithPassword({email:em,password:ps});
+    if(e1)throw e1;
+    const {data:perfil,error:e2}=await db.from('usuarios').select('*').eq('id',data.user.id).single();
+    if(e2)throw e2;
+    if(S.role&&perfil.tipo!==S.role){await db.auth.signOut();throw new Error(`Esta cuenta es de tipo "${perfil.tipo}"`)}
+    S.cu=perfil;go(perfil.tipo);
+  }catch(e){err.style.display='block';err.textContent=e.message.includes('Invalid login')?'Correo o contraseña incorrectos':e.message}
+  finally{btn.disabled=false;btn.textContent='Entrar'}
+}
+
+async function loginDemo(tipo){
+  loading(true,'Entrando al modo demo...');
+  const email=tipo==='medico'?'demo.medico@funcioscore.cl':'demo.paciente@funcioscore.cl';
+  const pass='Demo1234!';
+  try{
+    let {data,error}=await db.auth.signInWithPassword({email,password:pass});
+    if(error){
+      const reg=await db.auth.signUp({email,password:pass});
+      if(reg.error)throw reg.error;
+      const uid=reg.data.user.id;
+      const p=tipo==='medico'?{id:uid,tipo:'medico',nombre:'Demo',apellido:'Médico',email,especialidad:'Cirugía de mano',codigo:'DEMO-001'}:{id:uid,tipo:'paciente',nombre:'Demo',apellido:'Paciente',email,rut:'12.345.678-9',dob:'1990-06-15'};
+      await db.from('usuarios').insert(p);
+      const {data:med}=await db.from('usuarios').select('id').eq('email','demo.medico@funcioscore.cl').single();
+      const {data:pac}=await db.from('usuarios').select('id').eq('email','demo.paciente@funcioscore.cl').single();
+      if(med&&pac)await db.from('vinculos').insert({medico_id:med.id,paciente_id:pac.id}).select();
+      data=reg.data;
+    }
+    const {data:perfil}=await db.from('usuarios').select('*').eq('id',data.user.id).single();
+    S.cu=perfil;go(tipo);
+  }catch(e){alert('Error demo: '+e.message)}
+  finally{loading(false)}
+}
+
+// ---- MÉDICO ----
+async function renderMedico(){
+  if(!S.cu)return;
+  document.getElementById('med-nl').textContent='Dr./a '+S.cu.nombre;
+  await renderPacList();
+}
+
+async function renderPacList(){
+  const el=document.getElementById('pac-list');
+  el.innerHTML='<div class="empty"><span class="spinner spinner-dark"></span></div>';
+  try{
+    const {data:vincs}=await db.from('vinculos').select('paciente_id').eq('medico_id',S.cu.id);
+    if(!vincs||!vincs.length){el.innerHTML='<div class="empty">Sin pacientes vinculados.<br>Usa "+ Vincular" para agregar.</div>';return}
+    const ids=vincs.map(v=>v.paciente_id);
+    const {data:pacs}=await db.from('usuarios').select('*').in('id',ids);
+    const {data:evs}=await db.from('evaluaciones').select('paciente_id,total,fecha').in('paciente_id',ids).order('fecha',{ascending:false});
+    el.innerHTML=(pacs||[]).map(p=>{
+      const pevs=(evs||[]).filter(e=>e.paciente_id===p.id),last=pevs[0];
+      return`<div class="patient-row">
+        <div class="av av-b">${ini(p)}</div>
+        <div style="flex:1"><div style="font-size:14px;font-weight:500">${p.nombre} ${p.apellido}</div>
+        <div class="t2">${age(p.dob)} años · ${pevs.length} eval.</div></div>
+        <div class="flex ic gap8">
+          <button class="btn btn-sm" onclick="openFicha('${p.id}')">Ficha clínica</button>
+          ${last?`<span class="badge ${scCls(last.total)}">${last.total}%</span>`:'<span class="badge bb">Sin evaluar</span>'}
+        </div>
+      </div>`;
+    }).join('')||'<div class="empty">Sin datos</div>';
+  }catch(e){el.innerHTML=`<div class="empty">Error: ${e.message}</div>`}
+}
+
+async function renderResMedico(){
+  const el=document.getElementById('res-cont');
+  el.innerHTML='<div class="empty"><span class="spinner spinner-dark"></span></div>';
+  try{
+    const {data:vincs}=await db.from('vinculos').select('paciente_id').eq('medico_id',S.cu.id);
+    if(!vincs||!vincs.length){el.innerHTML='<div class="empty">Sin pacientes vinculados</div>';return}
+    const ids=vincs.map(v=>v.paciente_id);
+    const {data:pacs}=await db.from('usuarios').select('*').in('id',ids);
+    const {data:evs}=await db.from('evaluaciones').select('*').in('paciente_id',ids).order('fecha',{ascending:false});
+    const {data:fichas}=await db.from('ficha_paciente').select('paciente_id,fecha_cirugia').in('paciente_id',ids);
+    let html='';
+    (pacs||[]).forEach(p=>{
+      const pevs=(evs||[]).filter(e=>e.paciente_id===p.id);
+      if(!pevs.length)return;
+      const ficha=(fichas||[]).find(f=>f.paciente_id===p.id);
+      html+=`<div class="card"><div class="flex ic gap8" style="margin-bottom:12px"><div class="av av-b">${ini(p)}</div>
+        <div><div style="font-weight:500;font-size:14px">${p.nombre} ${p.apellido}</div><div class="t2">${pevs.length} evaluación${pevs.length!==1?'es':''}</div></div></div>`;
+      pevs.forEach(ev=>{
+        const gs=calcGroupScores(ev.areas||[],ev.area_x);
+        const m=ficha?mesesPostCirugia(ficha.fecha_cirugia,ev.fecha):null;
+        const mlbl=mesesLabel(m);
+        html+=`<div style="padding:10px 0;border-top:.5px solid var(--b)">
+          <div class="flex ic gap8" style="margin-bottom:6px">
+            ${mlbl?`<div style="font-size:20px;font-weight:500;color:var(--pd)">${m===0?'< 1 mes':m}</div><div><div style="font-size:11px;color:var(--t2)">${m===0?'post-cirugía':'meses post-cirugía'}</div><div class="t2">${fdate(ev.fecha)}</div></div>`:`<span class="t2">${fdate(ev.fecha)}</span>`}
+            <span class="badge ${scCls(ev.total)} mla">${ev.total}%</span>
+            ${!ev.area_x?`<button class="btn btn-sm" onclick="openAreaXEditor('${ev.id}',${JSON.stringify(ev.area_x||{}).replace(/"/g,'&quot;')})">+ Área X</button>`:'<span class="badge bp">Área X ✓</span>'}
+          </div>
+          <div class="grid3" style="margin-bottom:8px">
+            ${gs.esencial!==null?`<div class="score-group"><div class="score-group-label">Esencial</div><div class="score-group-val" style="color:${scCol(gs.esencial)}">${gs.esencial}%</div></div>`:''}
+            ${gs.complementario!==null?`<div class="score-group"><div class="score-group-label">Complementario</div><div class="score-group-val" style="color:${scCol(gs.complementario)}">${gs.complementario}%</div></div>`:''}
+            ${gs.especifico!==null?`<div class="score-group"><div class="score-group-label">Específico</div><div class="score-group-val" style="color:${scCol(gs.especifico)}">${gs.especifico}%</div></div>`:''}
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:5px">
+            ${(ev.areas||[]).filter(a=>a.score!==null).map(a=>`<div style="font-size:11px">
+              <div class="t2" style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-bottom:2px">${a.name}</div>
+              <div style="font-weight:500;color:${scCol(a.score)}">${a.score}%</div>
+              <div class="pb-wrap"><div class="pb-fill" style="width:${a.score}%;background:${scCol(a.score)}"></div></div>
+            </div>`).join('')}
+          </div>
+        </div>`;
+      });
+      html+='</div>';
+    });
+    el.innerHTML=html||'<div class="empty">Sin evaluaciones aún</div>';
+  }catch(e){el.innerHTML=`<div class="empty">Error: ${e.message}</div>`}
+}
+
+function renderMedProf(){
+  const u=S.cu;
+  document.getElementById('med-prof').innerHTML=`
+    <div class="flex ic gap12" style="margin-bottom:12px"><div class="av av-t" style="width:52px;height:52px;font-size:16px">${ini(u)}</div>
+    <div><div style="font-size:16px;font-weight:500">Dr./a ${u.nombre} ${u.apellido}</div><div class="t2">${u.especialidad||'Médico / Terapeuta'}</div></div></div>
+    <div class="sep"></div>
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      <tr><td class="t2" style="padding:5px 0">Correo</td><td style="text-align:right">${u.email||'—'}</td></tr>
+      <tr><td class="t2" style="padding:5px 0">Código</td><td style="text-align:right">${u.codigo||'—'}</td></tr>
+    </table>`;
+}
+
+function mTab(t,el){
+  document.querySelectorAll('#page-medico .nt').forEach(x=>x.classList.remove('active'));el.classList.add('active');
+  document.querySelectorAll('#page-medico .tc').forEach(x=>x.classList.remove('active'));
+  document.getElementById('mt-'+t).classList.add('active');
+  if(t==='resultados')renderResMedico();
+  if(t==='perfil')renderMedProf();
+}
+
+// ---- VINCULAR ----
+function openAssign(){document.getElementById('assign-em').value='';document.getElementById('assign-err').style.display='none';document.getElementById('assign-ok').style.display='none';openModal('assign-modal')}
+async function doAssign(){
+  const em=document.getElementById('assign-em').value.trim().toLowerCase();
+  const err=document.getElementById('assign-err'),ok=document.getElementById('assign-ok');
+  err.style.display='none';ok.style.display='none';
+  if(!em){err.style.display='block';err.textContent='Ingresa un correo';return}
+  const btn=document.getElementById('btn-assign');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';
+  try{
+    const {data:pacs,error:e1}=await db.from('usuarios').select('id,nombre,apellido').eq('email',em).eq('tipo','paciente');
+    if(e1)throw e1;
+    if(!pacs||!pacs.length)throw new Error('No se encontró paciente con ese correo');
+    const pac=pacs[0];
+    const {data:existe}=await db.from('vinculos').select('id').eq('medico_id',S.cu.id).eq('paciente_id',pac.id);
+    if(existe&&existe.length)throw new Error(`${pac.nombre} ${pac.apellido} ya está vinculado`);
+    const {error:e2}=await db.from('vinculos').insert({medico_id:S.cu.id,paciente_id:pac.id});
+    if(e2)throw e2;
+    ok.style.display='block';ok.textContent=`✓ ${pac.nombre} ${pac.apellido} vinculado correctamente`;
+    setTimeout(async()=>{closeModal('assign-modal');await renderPacList();},1200);
+  }catch(e){err.style.display='block';err.textContent=e.message}
+  finally{btn.disabled=false;btn.textContent='Vincular'}
+}
+
+// ---- FICHA CLÍNICA ----
+async function openFicha(pacienteId){
+  S.editingPatientId=pacienteId;
+  // Reset form
+  document.querySelectorAll('#eaton-btns .eaton-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('kap-slider').value=0;document.getElementById('kap-val').textContent='—';
+  document.getElementById('dino-puno').value=0;document.getElementById('dino-puno-val').textContent='—';
+  document.getElementById('dino-pd').value=0;document.getElementById('dino-pd-val').textContent='—';
+  document.getElementById('dino-pl').value=0;document.getElementById('dino-pl-val').textContent='—';
+  document.getElementById('tipo-protesis').value='';
+  document.getElementById('otra-protesis').value='';document.getElementById('otra-protesis-wrap').style.display='none';
+  document.getElementById('vastago-n').value='';document.getElementById('cuello-n').value='';document.getElementById('copa-n').value='';
+  document.getElementById('fecha-cirugia').value='';
+  document.querySelectorAll('#mano-dom-btns .yn-btn').forEach(b=>{b.className='yn-btn';delete b.dataset.val});
+  document.getElementById('ficha-err').style.display='none';document.getElementById('ficha-ok').style.display='none';
+  // Load existing ficha
+  const {data:ficha}=await db.from('ficha_paciente').select('*').eq('paciente_id',pacienteId).single();
+  if(ficha){
+    if(ficha.eaton) document.querySelector(`#eaton-btns .eaton-btn[onclick*="'${ficha.eaton}'"]`)?.classList.add('sel');
+    if(ficha.kapandji!==null){document.getElementById('kap-slider').value=ficha.kapandji;document.getElementById('kap-val').textContent=ficha.kapandji}
+    if(ficha.dino_puno!==null){document.getElementById('dino-puno').value=ficha.dino_puno;document.getElementById('dino-puno-val').textContent=ficha.dino_puno+' kg'}
+    if(ficha.dino_pinza_digital!==null){document.getElementById('dino-pd').value=ficha.dino_pinza_digital;document.getElementById('dino-pd-val').textContent=ficha.dino_pinza_digital+' kg'}
+    if(ficha.dino_pinza_lateral!==null){document.getElementById('dino-pl').value=ficha.dino_pinza_lateral;document.getElementById('dino-pl-val').textContent=ficha.dino_pinza_lateral+' kg'}
+    if(ficha.tipo_protesis){document.getElementById('tipo-protesis').value=ficha.tipo_protesis;if(ficha.tipo_protesis==='otra'){document.getElementById('otra-protesis-wrap').style.display='block';document.getElementById('otra-protesis').value=ficha.tipo_protesis_otra||''}}
+    if(ficha.vastago_num!==null)document.getElementById('vastago-n').value=ficha.vastago_num;
+    if(ficha.cuello_num!==null)document.getElementById('cuello-n').value=ficha.cuello_num;
+    if(ficha.copa_num!==null)document.getElementById('copa-n').value=ficha.copa_num;
+    if(ficha.fecha_cirugia) document.getElementById('fecha-cirugia').value=ficha.fecha_cirugia;
+    if(ficha.mano_dominante_operada!==null){const btns=document.querySelectorAll('#mano-dom-btns .yn-btn');btns[ficha.mano_dominante_operada?0:1].className='yn-btn '+(ficha.mano_dominante_operada?'sel-si':'sel-no');btns[ficha.mano_dominante_operada?0:1].dataset.val=String(ficha.mano_dominante_operada)}
+  }
+  openModal('ficha-modal');
+}
+
+function setEaton(val,btn){
+  document.querySelectorAll('#eaton-btns .eaton-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+async function saveFicha(){
+  const err=document.getElementById('ficha-err'),ok=document.getElementById('ficha-ok');
+  err.style.display='none';ok.style.display='none';
+  const eatonBtn=document.querySelector('#eaton-btns .eaton-btn.sel');
+  const kapVal=document.getElementById('kap-val').textContent;
+  const btn=document.getElementById('btn-ficha');btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Guardando...';
+  try{
+    const payload={
+      paciente_id:S.editingPatientId,medico_id:S.cu.id,
+      eaton:eatonBtn?eatonBtn.textContent:null,
+      kapandji:kapVal!=='—'?parseInt(kapVal):null,
+      dino_puno:parseFloat(document.getElementById('dino-puno').value)||0,
+      dino_pinza_digital:parseFloat(document.getElementById('dino-pd').value)||0,
+      dino_pinza_lateral:parseFloat(document.getElementById('dino-pl').value)||0,
+      tipo_protesis:document.getElementById('tipo-protesis').value||null,
+      tipo_protesis_otra:document.getElementById('otra-protesis').value||null,
+      vastago_num:parseFloat(document.getElementById('vastago-n').value)||null,
+      cuello_num:parseFloat(document.getElementById('cuello-n').value)||null,
+      copa_num:parseFloat(document.getElementById('copa-n').value)||null,
+      fecha_cirugia: document.getElementById('fecha-cirugia').value||null,
+      mano_dominante_operada:getYN('mano-dom-btns')
+    };
+    const {error}=await db.from('ficha_paciente').upsert(payload,{onConflict:'paciente_id'});
+    if(error)throw error;
+    ok.style.display='block';ok.textContent='✓ Ficha guardada correctamente';
+    setTimeout(()=>closeModal('ficha-modal'),1200);
+  }catch(e){err.style.display='block';err.textContent=e.message}
+  finally{btn.disabled=false;btn.textContent='Guardar ficha'}
+}
+
+// ---- ÁREA X EDITOR (doctor) ----
+function openAreaXEditor(evalId,existingData){
+  S.editingEvalId=evalId;
+  S.axData={};
+  // Reset scales
+  AX_FIELDS.forEach(f=>{
+    const map={vastago:'ax-vastago',copa:'ax-copa',cuello:'ax-cuello',cicatriz:'ax-cicatriz',partes_blandas:'ax-partes'};
+    const val=existingData&&existingData[f]?existingData[f]:null;
+    if(val)S.axData[f]=val;
+    renderScaleWrap(map[f],f,val);
+  });
+  // Reset yn
+  ['ax-luxado-btns','ax-infeccion-btns'].forEach(id=>{
+    document.querySelectorAll('#'+id+' .yn-btn').forEach(b=>{b.className='yn-btn';delete b.dataset.val});
+  });
+  if(existingData){
+    if(existingData.luxado!==null&&existingData.luxado!==undefined){const btns=document.querySelectorAll('#ax-luxado-btns .yn-btn');const idx=existingData.luxado?0:1;btns[idx].className='yn-btn '+(existingData.luxado?'sel-si':'sel-no');btns[idx].dataset.val=String(existingData.luxado)}
+    if(existingData.infeccion!==null&&existingData.infeccion!==undefined){const btns=document.querySelectorAll('#ax-infeccion-btns .yn-btn');const idx=existingData.infeccion?0:1;btns[idx].className='yn-btn '+(existingData.infeccion?'sel-si':'sel-no');btns[idx].dataset.val=String(existingData.infeccion)}
+    document.getElementById('ax-dequervain').checked=!!existingData.comp_dequervain;
+    document.getElementById('ax-rotura').checked=!!existingData.comp_rotura;
+    document.getElementById('ax-calcif').checked=!!existingData.comp_calcificacion;
+    document.getElementById('ax-otra').value=existingData.comp_otra||'';
+  } else {
+    document.getElementById('ax-dequervain').checked=false;
+    document.getElementById('ax-rotura').checked=false;
+    document.getElementById('ax-calcif').checked=false;
+    document.getElementById('ax-otra').value='';
+  }
+  document.getElementById('areax-err').style.display='none';
+  document.getElementById('areax-ok').style.display='none';
+  openModal('areax-modal');
+}
+
+async function saveAreaX(){
+  const err=document.getElementById('areax-err'),ok=document.getElementById('areax-ok');
+  err.style.display='none';ok.style.display='none';
+  const btn=document.getElementById('btn-areax');btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Guardando...';
+  try{
+    const axData={
+      ...S.axData,
+      luxado:getYN('ax-luxado-btns'),
+      infeccion:getYN('ax-infeccion-btns'),
+      comp_dequervain:document.getElementById('ax-dequervain').checked,
+      comp_rotura:document.getElementById('ax-rotura').checked,
+      comp_calcificacion:document.getElementById('ax-calcif').checked,
+      comp_otra:document.getElementById('ax-otra').value.trim()||null
+    };
+    const {error}=await db.from('evaluaciones').update({area_x:axData}).eq('id',S.editingEvalId);
+    if(error)throw error;
+    ok.style.display='block';ok.textContent='✓ Área X guardada correctamente';
+    setTimeout(()=>{closeModal('areax-modal');renderResMedico();},1200);
+  }catch(e){err.style.display='block';err.textContent=e.message}
+  finally{btn.disabled=false;btn.textContent='Guardar'}
+}
+
+// ---- PACIENTE ----
+async function renderPaciente(){
+  if(!S.cu)return;
+  document.getElementById('pac-nl').textContent=S.cu.nombre;
+  const {data:evs}=await db.from('evaluaciones').select('total,fecha,areas,area_x').eq('paciente_id',S.cu.id).order('fecha',{ascending:false}).limit(1);
+  const last=evs&&evs[0];
+  const bn=document.getElementById('pac-banner');
+  if(last){
+    const scored=(last.areas||[]).filter(a=>a.score!==null);
+    const gs=calcGroupScores(last.areas||[],last.area_x);
+    bn.innerHTML=`<div class="card">
+      <div class="t2" style="margin-bottom:8px">Última evaluación · ${fdate(last.fecha)}</div>
+      <div class="grid3" style="margin-bottom:12px">
+        ${gs.esencial!==null?`<div class="score-group"><div class="score-group-label">Esencial</div><div class="score-group-val" style="color:${scCol(gs.esencial)}">${gs.esencial}%</div></div>`:'<div class="score-group"><div class="score-group-label">Esencial</div><div class="score-group-val t2">—</div></div>'}
+        ${gs.complementario!==null?`<div class="score-group"><div class="score-group-label">Complementario</div><div class="score-group-val" style="color:${scCol(gs.complementario)}">${gs.complementario}%</div></div>`:'<div class="score-group"><div class="score-group-label">Complementario</div><div class="score-group-val t2">—</div></div>'}
+        ${gs.especifico!==null?`<div class="score-group"><div class="score-group-label">Específico</div><div class="score-group-val" style="color:${scCol(gs.especifico)}">${gs.especifico}%</div></div>`:'<div class="score-group"><div class="score-group-label">Específico</div><div class="score-group-val t2">—</div></div>'}
+      </div>
+      <div>${scored.slice(0,6).map(a=>`<div style="margin-bottom:6px">
+        <div class="flex ic gap8" style="margin-bottom:2px"><span style="font-size:11px;color:var(--t2);flex:1">${a.name}</span><span style="font-size:11px;font-weight:500">${a.score}%</span></div>
+        <div class="pb-wrap"><div class="pb-fill" style="width:${a.score}%;background:${scCol(a.score)}"></div></div>
+      </div>`).join('')}</div>
+    </div>`;
+  }else{
+    bn.innerHTML='<div class="alert ai">Aún no tienes evaluaciones. ¡Completa tu primera evaluación!</div>';
+  }
+}
+
+async function renderHist(){
+  const el=document.getElementById('hist-list');
+  el.innerHTML='<div class="empty"><span class="spinner spinner-dark"></span></div>';
+  const [{data:evs},{data:ficha}]=await Promise.all([
+    db.from('evaluaciones').select('*').eq('paciente_id',S.cu.id).order('fecha',{ascending:false}),
+    db.from('ficha_paciente').select('fecha_cirugia').eq('paciente_id',S.cu.id).single()
+  ]);
+  if(!evs||!evs.length){el.innerHTML='<div class="empty">Sin evaluaciones previas</div>';return}
+  el.innerHTML=evs.map(ev=>{
+    const scored=(ev.areas||[]).filter(a=>a.score!==null);
+    const gs=calcGroupScores(ev.areas||[],ev.area_x);
+    const m=ficha?mesesPostCirugia(ficha.fecha_cirugia,ev.fecha):null;
+    return`<div class="card">
+      <div class="flex ic gap8" style="margin-bottom:10px">
+        ${m!==null
+          ?`<div style="display:flex;align-items:baseline;gap:6px">
+              <span style="font-size:36px;font-weight:500;color:var(--pd);line-height:1">${m===0?'&lt;1':m}</span>
+              <span style="font-size:13px;color:var(--t2)">${m===1?'mes':'meses'} post-cirugía</span>
+            </div>`
+          :`<span style="font-size:14px;font-weight:500">${fdate(ev.fecha)}</span>`}
+        <span class="badge ${scCls(ev.total)} mla">${ev.total}%</span>
+      </div>
+      ${m!==null?`<div class="t2" style="margin-bottom:10px;font-size:12px">${fdate(ev.fecha)}</div>`:''}
+      <div class="grid3" style="margin-bottom:10px">
+        <div class="score-group"><div class="score-group-label">Esencial</div><div class="score-group-val" style="font-size:20px;color:${gs.esencial!==null?scCol(gs.esencial):'var(--t2)'}">${gs.esencial!==null?gs.esencial+'%':'—'}</div></div>
+        <div class="score-group"><div class="score-group-label">Complementario</div><div class="score-group-val" style="font-size:20px;color:${gs.complementario!==null?scCol(gs.complementario):'var(--t2)'}">${gs.complementario!==null?gs.complementario+'%':'—'}</div></div>
+        <div class="score-group"><div class="score-group-label">Específico</div><div class="score-group-val" style="font-size:20px;color:${gs.especifico!==null?scCol(gs.especifico):'var(--t2)'}">${gs.especifico!==null?gs.especifico+'%':'—'}</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        ${scored.map(a=>`<div>
+          <div class="flex ic gap8" style="margin-bottom:2px"><span style="font-size:11px;color:var(--t2)">${a.name}</span><span style="font-size:11px;font-weight:500;margin-left:auto">${a.score}%</span></div>
+          <div class="pb-wrap"><div class="pb-fill" style="width:${a.score}%;background:${scCol(a.score)}"></div></div>
+        </div>`).join('')}
+      </div></div>`;
+  }).join('');
+}
+
+function renderPacProf(){
+  const u=S.cu;
+  document.getElementById('pac-prof').innerHTML=`
+    <div class="flex ic gap12" style="margin-bottom:12px"><div class="av av-b" style="width:52px;height:52px;font-size:16px">${ini(u)}</div>
+    <div><div style="font-size:16px;font-weight:500">${u.nombre} ${u.apellido}</div><div class="t2">${age(u.dob)} años</div></div></div>
+    <div class="sep"></div>
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      <tr><td class="t2" style="padding:5px 0">RUT</td><td style="text-align:right">${u.rut||'—'}</td></tr>
+      <tr><td class="t2" style="padding:5px 0">Correo</td><td style="text-align:right">${u.email||'—'}</td></tr>
+    </table>`;
+}
+
+function pTab(t,el){
+  document.querySelectorAll('#page-paciente .nt').forEach(x=>x.classList.remove('active'));el.classList.add('active');
+  document.querySelectorAll('#page-paciente .tc').forEach(x=>x.classList.remove('active'));
+  document.getElementById('pt-'+t).classList.add('active');
+  if(t==='historial')renderHist();
+  if(t==='perfil')renderPacProf();
+}
+
+function mesesPostCirugia(fechaCirugia, fechaEval){
+  if(!fechaCirugia) return null;
+  const c=new Date(fechaCirugia), e=new Date(fechaEval);
+  const m=(e.getFullYear()-c.getFullYear())*12+(e.getMonth()-c.getMonth());
+  return m>=0?m:null;
+}
+function mesesLabel(m){
+  if(m===null) return null;
+  if(m===0) return'< 1 mes post-cirugía';
+  return m+' '+(m===1?'mes':'meses')+' post-cirugía';
+}
+
+// ---- SCORES ----
+function calcAreaScore(a,d){
+  if(a.type!=='scale')return null;
+  const vals=d.vals.filter(v=>v!==null&&v>=1);
+  if(!vals.length)return null;
+  return Math.round((vals.reduce((s,v)=>s+v,0)/vals.length)*20);
+}
+function calcLaboralScore(d){
+  if(!d.activities||!d.activities.length)return null;
+  const vals=d.activities.filter(ac=>ac.escala!==null&&ac.escala>=1).map(ac=>ac.escala);
+  if(!vals.length)return null;
+  return Math.round((vals.reduce((s,v)=>s+v,0)/vals.length)*20);
+}
+function calcAreaXScore(ax){
+  if(!ax)return null;
+  const vals=AX_FIELDS.map(f=>ax[f]).filter(v=>v>=1&&v<=5);
+  if(!vals.length)return null;
+  return Math.round((vals.reduce((s,v)=>s+v,0)/vals.length)*20);
+}
+function calcGroupScores(areas,areaX){
+  // areas is array from DB: [{name,score,type}]
+  const byName={};
+  AREAS.forEach((a,i)=>{byName[a.name]=areas[i]});
+  function groupAvg(indices){
+    const scores=[];
+    indices.forEach(i=>{
+      const a=AREAS[i],row=areas[i];
+      if(row&&row.score!==null&&row.score!==undefined)scores.push(row.score);
+    });
+    return scores.length?Math.round(scores.reduce((s,v)=>s+v,0)/scores.length):null;
+  }
+  return{
+    esencial:groupAvg([0,1,2,3]),
+    complementario:groupAvg([4,5]),
+    especifico:calcAreaXScore(areaX)
+  };
+}
+function calcTotal(data){
+  const vals=[];
+  AREAS.forEach((a,i)=>{
+    if(a.type==='scale')data[i].vals.forEach(v=>{if(v>=1)vals.push(v);});
+    if(a.type==='laboral')data[i].activities.forEach(ac=>{if(ac.escala>=1)vals.push(ac.escala);});
+  });
+  if(!vals.length)return 0;
+  return Math.round((vals.reduce((s,v)=>s+v,0)/vals.length)*20);
+}
+function calcAreasForSave(data){
+  return AREAS.map((a,i)=>{
+    let score=null;
+    if(a.type==='scale')score=calcAreaScore(a,data[i]);
+    if(a.type==='laboral')score=calcLaboralScore(data[i]);
+    return{name:a.name,score,type:a.type};
+  });
+}
+
+// ---- EVALUACIÓN ----
+function startEval(){
+  S.ev={aIdx:0,data:AREAS.map(a=>{
+    if(a.type==='scale')return{vals:new Array(a.acts.length).fill(null),obs:new Array(a.acts.length).fill('')};
+    if(a.type==='laboral')return{activities:[{desc:'',escala:null}]};
+    if(a.type==='artroplastia')return{};
+    return{};
+  })};
+  go('eval');renderAreaNav();renderArea();
+}
+
+function isAreaDone(i){
+  const a=AREAS[i],d=S.ev.data[i];
+  if(a.type==='scale')return d.vals.some(v=>v!==null);
+  if(a.type==='laboral')return d.activities.some(ac=>ac.escala!==null||ac.desc.trim());
+  if(a.type==='artroplastia')return false;
+  return false;
+}
+
+function renderAreaNav(){
+  document.getElementById('area-nav').innerHTML=AREAS.map((a,i)=>{
+    const isLocked=a.type==='artroplastia';
+    const cls=isLocked?'locked':i===S.ev.aIdx?'current':isAreaDone(i)?'done':'';
+    return`<button class="an-pill ${cls}" onclick="${isLocked?'':` jumpArea(${i})`}">${a.num}</button>`;
+  }).join('');
+}
+
+function jumpArea(i){S.ev.aIdx=i;renderAreaNav();renderArea();window.scrollTo(0,0)}
+function prevArea(){if(S.ev.aIdx>0){S.ev.aIdx--;renderAreaNav();renderArea();window.scrollTo(0,0)}}
+function nextArea(){
+  if(S.ev.aIdx===AREAS.length-1){finishEval();return}
+  // Skip area X for patients
+  let next=S.ev.aIdx+1;
+  if(AREAS[next].type==='artroplastia'&&S.cu.tipo==='paciente'){finishEval();return}
+  S.ev.aIdx=next;renderAreaNav();renderArea();window.scrollTo(0,0);
+}
+
+function renderArea(){
+  const i=S.ev.aIdx,a=AREAS[i],d=S.ev.data[i];
+  const done=AREAS.filter((_,j)=>isAreaDone(j)).length;
+  document.getElementById('eval-prog-lbl').textContent=`${done} de ${AREAS.length-1} áreas`;
+  document.getElementById('eval-pbar').style.width=Math.round((done/(AREAS.length-1))*100)+'%';
+  document.getElementById('btn-prev').disabled=i===0;
+  // Next button label
+  const isSecondLast=i===AREAS.length-2;
+  document.getElementById('btn-next').textContent=(isSecondLast||i===AREAS.length-1)?'Finalizar evaluación ✓':'Siguiente →';
+
+  let html=`<div class="area-header">
+    <div class="area-num">${a.num}</div>
+    <div style="flex:1"><div style="font-size:14px;font-weight:500">${a.name}</div>
+    <div class="t2" style="font-size:11px">${a.type==='scale'?'0 = no aplica · 1 = no puede · 5 = sin dificultad':a.type==='laboral'?'Agrega tus actividades laborales y evalúa cada una':'Solo visible para el médico tratante'}</div></div>
+    <div class="t2" style="font-size:11px;flex-shrink:0">${i+1}/${AREAS.length}</div>
+  </div>`;
+
+  if(a.type==='scale'){
+    html+=`<div class="scale-legend">${[0,1,2,3,4,5].map((v,idx)=>`<div class="sl-item"><div class="sc-btn ${SC[v]}" style="pointer-events:none;width:22px;height:22px;font-size:10px">${v}</div><span class="t2">${['N/A','Pésimo','Malo','Regular','Bueno','Excelente'][idx]}</span></div>`).join('')}</div>`;
+    html+=`<div class="card">${a.acts.map((act,j)=>`
+      <div class="act-row">
+        <div class="act-name">${act}</div>
+        <div class="scale-wrap">${[0,1,2,3,4,5].map(v=>`<button class="sc-btn ${d.vals[j]===v?SC[v]:''}" onclick="setVal(${j},${v})" title="${SL[v]}">${v}</button>`).join('')}</div>
+        <div style="font-size:11px;color:var(--t2);min-height:16px;margin-bottom:2px">${d.vals[j]!==null?SL[d.vals[j]]:''}</div>
+        <input class="act-obs" placeholder="Observación (opcional)" value="${(d.obs[j]||'').replace(/"/g,'&quot;')}" oninput="setObs(${j},this.value)">
+      </div>`).join('')}</div>`;
+
+  } else if(a.type==='laboral'){
+    html+=`<div class="card">`;
+    html+=d.activities.map((act,j)=>`
+      <div class="act-row" id="lab-row-${j}">
+        <div class="flex ic gap8" style="margin-bottom:8px">
+          <span style="font-size:13px;font-weight:500">Actividad ${j+1}</span>
+          ${d.activities.length>1?`<button class="btn btn-sm btn-danger mla" onclick="removeLabAct(${j})">× Eliminar</button>`:''}
+        </div>
+        <label>Descripción</label>
+        <input placeholder="¿Qué actividad laboral realizas?" value="${(act.desc||'').replace(/"/g,'&quot;')}" oninput="setLabDesc(${j},this.value)" style="margin-bottom:10px">
+        <label>Evaluación de la actividad</label>
+        <div class="scale-wrap">${[0,1,2,3,4,5].map(v=>`<button class="sc-btn ${act.escala===v?SC[v]:''}" onclick="setLabEscala(${j},${v})" title="${SL[v]}">${v}</button>`).join('')}</div>
+        <div style="font-size:11px;color:var(--t2);min-height:16px">${act.escala!==null?SL[act.escala]:''}</div>
+      </div>`).join('');
+    html+=`<button class="btn btn-sm btn-p" style="margin-top:12px" onclick="addLabAct()">+ Agregar actividad</button>`;
+    html+=`</div>`;
+
+  } else if(a.type==='artroplastia'){
+    html+=`<div class="locked-area">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" stroke-width="1.5" style="margin-bottom:8px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <div style="font-size:14px;font-weight:500;margin-bottom:4px">Ítem completado por el médico</div>
+      <div class="t2">Tu médico tratante completará esta sección después de tu evaluación.</div>
+    </div>`;
+  }
+
+  document.getElementById('eval-content').innerHTML=html;
+}
+
+function setVal(j,v){S.ev.data[S.ev.aIdx].vals[j]=v;renderAreaNav();renderArea()}
+function setObs(j,v){S.ev.data[S.ev.aIdx].obs[j]=v}
+function addLabAct(){S.ev.data[S.ev.aIdx].activities.push({desc:'',escala:null});renderAreaNav();renderArea()}
+function removeLabAct(j){if(S.ev.data[S.ev.aIdx].activities.length>1){S.ev.data[S.ev.aIdx].activities.splice(j,1);renderAreaNav();renderArea()}}
+function setLabDesc(j,v){S.ev.data[S.ev.aIdx].activities[j].desc=v}
+function setLabEscala(j,v){S.ev.data[S.ev.aIdx].activities[j].escala=v;renderAreaNav();renderArea()}
+
+async function finishEval(){
+  const areas=calcAreasForSave(S.ev.data);
+  const total=calcTotal(S.ev.data);
+  let totalVals=0;
+  AREAS.forEach((a,i)=>{
+    if(a.type==='scale')S.ev.data[i].vals.forEach(v=>{if(v>=1)totalVals++;});
+    if(a.type==='laboral')S.ev.data[i].activities.forEach(ac=>{if(ac.escala>=1)totalVals++;});
+  });
+  loading(true,'Guardando evaluación...');
+  try{
+    const {data,error}=await db.from('evaluaciones').insert({
+      paciente_id:S.cu.id,total,total_vals:totalVals,areas,raw:S.ev.data
+    }).select().single();
+    if(error)throw error;
+    await renderResult({...data,areas,total,totalVals});
+    go('result');
+  }catch(e){alert('Error al guardar: '+e.message)}
+  finally{loading(false)}
+}
+
+async function renderResult(ev){
+  const scored=(ev.areas||[]).filter(a=>a.score!==null);
+  const gs=calcGroupScores(ev.areas||[],ev.area_x);
+  const {data:ficha}=await db.from('ficha_paciente').select('fecha_cirugia').eq('paciente_id',S.cu.id).single();
+  const m=ficha?mesesPostCirugia(ficha.fecha_cirugia,ev.fecha||new Date().toISOString()):null;
+  document.getElementById('result-content').innerHTML=`
+    <div class="card" style="text-align:center;padding:1.75rem">
+      ${m!==null?`<div style="margin-bottom:8px"><span style="font-size:52px;font-weight:500;color:var(--pd);line-height:1">${m===0?'&lt;1':m}</span> <span style="font-size:18px;color:var(--t2)">${m===1?'mes':'meses'} post-cirugía</span></div>`:''}
+      <div class="t2" style="margin-bottom:6px">${m!==null?'Score funcional global · '+fdate(ev.fecha||new Date()):'Score funcional global'}</div>
+      <div style="font-size:50px;font-weight:500;color:${scCol(ev.total)};line-height:1">${ev.total}%</div>
+      <div style="margin:8px 0"><span class="badge ${scCls(ev.total)}" style="font-size:13px;padding:4px 14px">${scLbl(ev.total)}</span></div>
+      <div class="t2" style="font-size:12px">Basado en ${ev.totalVals||ev.total_vals||0} actividades evaluadas</div>
+    </div>
+    <div class="grid3 mb1">
+      <div class="score-group card" style="margin:0;text-align:center">
+        <div class="score-group-label">Score Esencial</div>
+        <div class="score-group-val" style="color:${gs.esencial!==null?scCol(gs.esencial):'var(--t2)'}">${gs.esencial!==null?gs.esencial+'%':'—'}</div>
+        <div class="t2" style="font-size:10px;margin-top:2px">I · II · III · IV</div>
+      </div>
+      <div class="score-group card" style="margin:0;text-align:center">
+        <div class="score-group-label">Score Complementario</div>
+        <div class="score-group-val" style="color:${gs.complementario!==null?scCol(gs.complementario):'var(--t2)'}">${gs.complementario!==null?gs.complementario+'%':'—'}</div>
+        <div class="t2" style="font-size:10px;margin-top:2px">V · VI</div>
+      </div>
+      <div class="score-group card" style="margin:0;text-align:center">
+        <div class="score-group-label">Score Específico</div>
+        <div class="score-group-val" style="color:${gs.especifico!==null?scCol(gs.especifico):'var(--t2)'}">${gs.especifico!==null?gs.especifico+'%':'—'}</div>
+        <div class="t2" style="font-size:10px;margin-top:2px">X · Artroplastia</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:1rem">Detalle por área</h3>
+      ${scored.map(a=>`<div style="margin-bottom:12px">
+        <div class="flex ic gap8" style="margin-bottom:4px">
+          <span style="font-size:13px">${a.name}</span>
+          <span style="font-size:13px;font-weight:500;margin-left:auto;color:${scCol(a.score)}">${a.score}%</span>
+        </div>
+        <div class="pb-wrap" style="height:7px"><div class="pb-fill" style="width:${a.score}%;background:${scCol(a.score)}"></div></div>
+      </div>`).join('')}
+    </div>
+    <div class="card" style="background:var(--s2)">
+      <div style="font-size:13px;font-weight:500;margin-bottom:4px">Área X — Evaluación de la artroplastia</div>
+      <div class="t2">Tu médico completará este ítem por separado. El Score Específico aparecerá cuando esté disponible.</div>
+    </div>`;
+}
+
+// Close modals on outside click
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',function(e){if(e.target===this)closeModal(this.id)});
+});
+</script>
+</body>
+</html>
