@@ -258,15 +258,31 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
     <div class="flex ic gap8"><span class="t2" id="med-nl"></span><button class="btn btn-sm" onclick="doLogout()">Salir</button></div>
   </div>
   <div class="nav">
-    <button class="nt active" onclick="mTab('pacientes',this)">Pacientes</button>
-    <button class="nt" onclick="mTab('resultados',this)">Resultados</button>
+    <button class="nt active" onclick="mTab('inicio',this)">Inicio</button>
     <button class="nt" onclick="mTab('perfil',this)">Mi perfil</button>
   </div>
-  <div class="tc active" id="mt-pacientes">
-    <div class="flex ic mb1"><h2 style="margin:0">Pacientes</h2><button class="btn btn-sm btn-p mla" onclick="openAssign()">+ Vincular</button></div>
-    <div class="card" id="pac-list"></div>
+  <div class="tc active" id="mt-inicio">
+    <!-- Lista de pacientes -->
+    <div id="view-pacientes">
+      <div class="flex ic mb1"><h2 style="margin:0">Pacientes</h2><button class="btn btn-sm btn-p mla" onclick="openAssign()">+ Vincular</button></div>
+      <div class="card" id="pac-list"></div>
+    </div>
+    <!-- Detalle de un paciente -->
+    <div id="view-paciente-detalle" style="display:none">
+      <div class="flex ic mb1">
+        <button class="btn btn-sm" onclick="showPacientesList()">← Volver</button>
+        <div class="flex ic gap8 mla">
+          <div class="av av-b" id="det-av"></div>
+          <div>
+            <div style="font-size:16px;font-weight:500" id="det-nombre"></div>
+            <div class="t2" id="det-sub"></div>
+          </div>
+          <button class="btn btn-sm" id="det-ficha-btn">Ficha clínica</button>
+        </div>
+      </div>
+      <div id="det-evals"></div>
+    </div>
   </div>
-  <div class="tc" id="mt-resultados"><div id="res-cont"></div></div>
   <div class="tc" id="mt-perfil"><h2>Mi perfil</h2><div class="card" id="med-prof"></div></div>
 </div>
 
@@ -596,7 +612,13 @@ async function loginDemo(tipo){
 async function renderMedico(){
   if(!S.cu)return;
   document.getElementById('med-nl').textContent='Dr./a '+S.cu.nombre;
+  showPacientesList();
   await renderPacList();
+}
+
+function showPacientesList(){
+  document.getElementById('view-pacientes').style.display='block';
+  document.getElementById('view-paciente-detalle').style.display='none';
 }
 
 async function renderPacList(){
@@ -610,65 +632,68 @@ async function renderPacList(){
     const {data:evs}=await db.from('evaluaciones').select('paciente_id,total,fecha').in('paciente_id',ids).order('fecha',{ascending:false});
     el.innerHTML=(pacs||[]).map(p=>{
       const pevs=(evs||[]).filter(e=>e.paciente_id===p.id),last=pevs[0];
-      return`<div class="patient-row">
+      return`<div class="patient-row" style="cursor:pointer" onclick="openPacienteDetalle('${p.id}')">
         <div class="av av-b">${ini(p)}</div>
-        <div style="flex:1"><div style="font-size:14px;font-weight:500">${p.nombre} ${p.apellido}</div>
-        <div class="t2">${age(p.dob)} años · ${pevs.length} eval.</div></div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:500">${p.nombre} ${p.apellido}</div>
+          <div class="t2">${age(p.dob)} años · ${pevs.length} evaluación${pevs.length!==1?'es':''}</div>
+        </div>
         <div class="flex ic gap8">
-          <button class="btn btn-sm" onclick="openFicha('${p.id}')">Ficha clínica</button>
           ${last?`<span class="badge ${scCls(last.total)}">${last.total}%</span>`:'<span class="badge bb">Sin evaluar</span>'}
+          <span style="color:var(--t3);font-size:18px">›</span>
         </div>
       </div>`;
     }).join('')||'<div class="empty">Sin datos</div>';
   }catch(e){el.innerHTML=`<div class="empty">Error: ${e.message}</div>`}
 }
 
-async function renderResMedico(){
-  const el=document.getElementById('res-cont');
-  el.innerHTML='<div class="empty"><span class="spinner spinner-dark"></span></div>';
+async function openPacienteDetalle(pacienteId){
+  document.getElementById('view-pacientes').style.display='none';
+  document.getElementById('view-paciente-detalle').style.display='block';
+  const det=document.getElementById('det-evals');
+  det.innerHTML='<div class="empty"><span class="spinner spinner-dark"></span></div>';
   try{
-    const {data:vincs}=await db.from('vinculos').select('paciente_id').eq('medico_id',S.cu.id);
-    if(!vincs||!vincs.length){el.innerHTML='<div class="empty">Sin pacientes vinculados</div>';return}
-    const ids=vincs.map(v=>v.paciente_id);
-    const {data:pacs}=await db.from('usuarios').select('*').in('id',ids);
-    const {data:evs}=await db.from('evaluaciones').select('*').in('paciente_id',ids).order('fecha',{ascending:false});
-    const {data:fichas}=await db.from('ficha_paciente').select('paciente_id,fecha_cirugia').in('paciente_id',ids);
-    let html='';
-    (pacs||[]).forEach(p=>{
-      const pevs=(evs||[]).filter(e=>e.paciente_id===p.id);
-      if(!pevs.length)return;
-      const ficha=(fichas||[]).find(f=>f.paciente_id===p.id);
-      html+=`<div class="card"><div class="flex ic gap8" style="margin-bottom:12px"><div class="av av-b">${ini(p)}</div>
-        <div><div style="font-weight:500;font-size:14px">${p.nombre} ${p.apellido}</div><div class="t2">${pevs.length} evaluación${pevs.length!==1?'es':''}</div></div></div>`;
-      pevs.forEach(ev=>{
-        const gs=calcGroupScores(ev.areas||[],ev.area_x);
-        const m=ficha?mesesPostCirugia(ficha.fecha_cirugia,ev.fecha):null;
-        const mlbl=mesesLabel(m);
-        html+=`<div style="padding:10px 0;border-top:.5px solid var(--b)">
-          <div class="flex ic gap8" style="margin-bottom:6px">
-            ${mlbl?`<div style="font-size:20px;font-weight:500;color:var(--pd)">${m===0?'< 1 mes':m}</div><div><div style="font-size:11px;color:var(--t2)">${m===0?'post-cirugía':'meses post-cirugía'}</div><div class="t2">${fdate(ev.fecha)}</div></div>`:`<span class="t2">${fdate(ev.fecha)}</span>`}
-            <span class="badge ${scCls(ev.total)} mla">${ev.total}%</span>
-            ${!ev.area_x?`<button class="btn btn-sm" onclick="openAreaXEditor('${ev.id}',${JSON.stringify(ev.area_x||{}).replace(/"/g,'&quot;')})">+ Área X</button>`:'<span class="badge bp">Área X ✓</span>'}
-          </div>
-          <div class="grid4" style="margin-bottom:8px">
-            ${gs.esencial!==null?`<div class="score-group"><div class="score-group-label">Esencial</div><div class="score-group-val" style="color:${scCol(gs.esencial)}">${gs.esencial}%</div></div>`:''}
-            ${gs.complementario!==null?`<div class="score-group"><div class="score-group-label">Complementario</div><div class="score-group-val" style="color:${scCol(gs.complementario)}">${gs.complementario}%</div></div>`:''}
-            ${gs.medicosocial!==null?`<div class="score-group"><div class="score-group-label">Médico-social</div><div class="score-group-val" style="color:${scCol(gs.medicosocial)}">${gs.medicosocial}%</div></div>`:''}
-            ${gs.especifico!==null?`<div class="score-group"><div class="score-group-label">Específico</div><div class="score-group-val" style="color:${scCol(gs.especifico)}">${gs.especifico}%</div></div>`:''}
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:5px">
-            ${(ev.areas||[]).filter(a=>a.score!==null).map(a=>`<div style="font-size:11px">
-              <div class="t2" style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-bottom:2px">${a.name}</div>
-              <div style="font-weight:500;color:${scCol(a.score)}">${a.score}%</div>
-              <div class="pb-wrap"><div class="pb-fill" style="width:${a.score}%;background:${scCol(a.score)}"></div></div>
-            </div>`).join('')}
-          </div>
-        </div>`;
-      });
-      html+='</div>';
-    });
-    el.innerHTML=html||'<div class="empty">Sin evaluaciones aún</div>';
-  }catch(e){el.innerHTML=`<div class="empty">Error: ${e.message}</div>`}
+    const [{data:pac},{data:evs},{data:ficha}]=await Promise.all([
+      db.from('usuarios').select('*').eq('id',pacienteId).single(),
+      db.from('evaluaciones').select('*').eq('paciente_id',pacienteId).order('fecha',{ascending:false}),
+      db.from('ficha_paciente').select('*').eq('paciente_id',pacienteId).single()
+    ]);
+    document.getElementById('det-av').textContent=ini(pac);
+    document.getElementById('det-nombre').textContent=pac.nombre+' '+pac.apellido;
+    document.getElementById('det-sub').textContent=age(pac.dob)+' años';
+    document.getElementById('det-ficha-btn').onclick=()=>openFicha(pacienteId);
+    if(!evs||!evs.length){det.innerHTML='<div class="empty">Este paciente aún no tiene evaluaciones</div>';return}
+    det.innerHTML=evs.map(ev=>{
+      const gs=calcGroupScores(ev.areas||[],ev.area_x);
+      const m=ficha?mesesPostCirugia(ficha.fecha_cirugia,ev.fecha):null;
+      const scored=(ev.areas||[]).filter(a=>a.score!==null);
+      return`<div class="card">
+        <div class="flex ic gap8" style="margin-bottom:10px">
+          ${m!==null
+            ?`<div class="flex ic gap8"><span style="font-size:32px;font-weight:500;color:var(--pd);line-height:1;font-family:var(--ffs)">${m===0?'&lt;1':m}</span><span class="t2">${m===1?'mes':'meses'} post-cirugía</span></div>`
+            :`<span style="font-size:15px;font-weight:500">${fdate(ev.fecha)}</span>`}
+          <span class="badge ${scCls(ev.total)} mla">${ev.total}%</span>
+          ${!ev.area_x
+            ?`<button class="btn btn-sm" onclick="openAreaXEditor('${ev.id}',${JSON.stringify(ev.area_x||{}).replace(/"/g,'&quot;')})">+ Área X</button>`
+            :`<span class="badge bp">Área X ✓</span>`}
+        </div>
+        ${m!==null?`<div class="t2" style="margin-bottom:10px;font-size:12px">${fdate(ev.fecha)}</div>`:''}
+        <div class="grid4" style="margin-bottom:12px">
+          <div class="score-group"><div class="score-group-label">Esencial</div><div class="score-group-val" style="font-size:20px;color:${gs.esencial!==null?scCol(gs.esencial):'var(--t2)'}">${gs.esencial!==null?gs.esencial+'%':'—'}</div></div>
+          <div class="score-group"><div class="score-group-label">Complementario</div><div class="score-group-val" style="font-size:20px;color:${gs.complementario!==null?scCol(gs.complementario):'var(--t2)'}">${gs.complementario!==null?gs.complementario+'%':'—'}</div></div>
+          <div class="score-group"><div class="score-group-label">Médico-social</div><div class="score-group-val" style="font-size:20px;color:${gs.medicosocial!==null?scCol(gs.medicosocial):'var(--t2)'}">${gs.medicosocial!==null?gs.medicosocial+'%':'—'}</div></div>
+          <div class="score-group"><div class="score-group-label">Específico</div><div class="score-group-val" style="font-size:20px;color:${gs.especifico!==null?scCol(gs.especifico):'var(--t2)'}">${gs.especifico!==null?gs.especifico+'%':'—'}</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px">
+          ${scored.map(a=>`<div style="font-size:12px">
+            <div class="t2" style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-bottom:2px">${a.name}</div>
+            <div style="font-weight:500;color:${scCol(a.score)}">${a.score}%</div>
+            <div class="pb-wrap"><div class="pb-fill" style="width:${a.score}%;background:${scCol(a.score)}"></div></div>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){det.innerHTML=`<div class="empty">Error: ${e.message}</div>`}
 }
 
 function renderMedProf(){
@@ -687,7 +712,7 @@ function mTab(t,el){
   document.querySelectorAll('#page-medico .nt').forEach(x=>x.classList.remove('active'));el.classList.add('active');
   document.querySelectorAll('#page-medico .tc').forEach(x=>x.classList.remove('active'));
   document.getElementById('mt-'+t).classList.add('active');
-  if(t==='resultados')renderResMedico();
+  if(t==='inicio'){showPacientesList();renderPacList();}
   if(t==='perfil')renderMedProf();
 }
 
