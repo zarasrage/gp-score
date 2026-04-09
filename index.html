@@ -629,17 +629,30 @@ async function renderPacList(){
     if(!vincs||!vincs.length){el.innerHTML='<div class="empty">Sin pacientes vinculados.<br>Usa "+ Vincular" para agregar.</div>';return}
     const ids=vincs.map(v=>v.paciente_id);
     const {data:pacs}=await db.from('usuarios').select('*').in('id',ids);
-    const {data:evs}=await db.from('evaluaciones').select('paciente_id,total,fecha').in('paciente_id',ids).order('fecha',{ascending:false});
+    const {data:evs}=await db.from('evaluaciones').select('paciente_id,fecha').in('paciente_id',ids).order('fecha',{ascending:false});
+    const {data:fichas}=await db.from('ficha_paciente').select('paciente_id').in('paciente_id',ids);
     el.innerHTML=(pacs||[]).map(p=>{
-      const pevs=(evs||[]).filter(e=>e.paciente_id===p.id),last=pevs[0];
+      const pevs=(evs||[]).filter(e=>e.paciente_id===p.id);
+      const tieneFicha=!!(fichas||[]).find(f=>f.paciente_id===p.id);
+      const fichaIcon=tieneFicha
+        ?`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>`
+        :`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="2" rx="1"/><path d="M9 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2h-3"/><path d="M9 12h6M9 16h4"/></svg>`;
+      const fichaLabel=tieneFicha?'Ficha ✓':'Ficha';
+      const fichaStyle=tieneFicha
+        ?'background:#dcfce7;color:#166534;border-color:#86efac'
+        :'background:var(--s2);color:var(--t2);border-color:var(--b)';
       return`<div class="patient-row" style="cursor:pointer" onclick="openPacienteDetalle('${p.id}')">
         <div class="av av-b">${ini(p)}</div>
         <div style="flex:1">
           <div style="font-size:15px;font-weight:500">${p.nombre} ${p.apellido}</div>
-          <div class="t2">${age(p.dob)} años · ${pevs.length} evaluación${pevs.length!==1?'es':''}</div>
+          <div class="t2">${age(p.dob)} años</div>
         </div>
         <div class="flex ic gap8">
-          ${last?`<span class="badge ${scCls(last.total)}">${last.total}%</span>`:'<span class="badge bb">Sin evaluar</span>'}
+          <button class="btn btn-sm" style="${fichaStyle};display:flex;align-items:center;gap:5px" onclick="event.stopPropagation();openFicha('${p.id}')">${fichaIcon}${fichaLabel}</button>
+          <div style="text-align:center;min-width:40px">
+            <div style="font-size:22px;font-weight:500;color:var(--pd);line-height:1;font-family:var(--ffs)">${pevs.length}</div>
+            <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em">eval.</div>
+          </div>
           <span style="color:var(--t3);font-size:18px">›</span>
         </div>
       </div>`;
@@ -661,23 +674,38 @@ async function openPacienteDetalle(pacienteId){
     document.getElementById('det-av').textContent=ini(pac);
     document.getElementById('det-nombre').textContent=pac.nombre+' '+pac.apellido;
     document.getElementById('det-sub').textContent=age(pac.dob)+' años';
-    document.getElementById('det-ficha-btn').onclick=()=>openFicha(pacienteId);
+    const fichaBtn=document.getElementById('det-ficha-btn');
+    fichaBtn.onclick=()=>openFicha(pacienteId);
+    if(ficha&&ficha.eaton){
+      fichaBtn.textContent='Ficha ✓';
+      fichaBtn.style.cssText='background:#dcfce7;color:#166534;border-color:#86efac';
+    } else {
+      fichaBtn.textContent='Ficha clínica';
+      fichaBtn.style.cssText='';
+    }
     if(!evs||!evs.length){det.innerHTML='<div class="empty">Este paciente aún no tiene evaluaciones</div>';return}
+    // La más antigua es la preoperatoria (índice al final porque están ordenadas desc)
+    const preopId=evs[evs.length-1].id;
     det.innerHTML=evs.map(ev=>{
+      const esPreop=ev.id===preopId;
       const gs=calcGroupScores(ev.areas||[],ev.area_x);
       const m=ficha?mesesPostCirugia(ficha.fecha_cirugia,ev.fecha):null;
       const scored=(ev.areas||[]).filter(a=>a.score!==null);
       return`<div class="card">
         <div class="flex ic gap8" style="margin-bottom:10px">
-          ${m!==null
-            ?`<div class="flex ic gap8"><span style="font-size:32px;font-weight:500;color:var(--pd);line-height:1;font-family:var(--ffs)">${m===0?'&lt;1':m}</span><span class="t2">${m===1?'mes':'meses'} post-cirugía</span></div>`
-            :`<span style="font-size:15px;font-weight:500">${fdate(ev.fecha)}</span>`}
+          ${esPreop
+            ?`<span class="badge ba" style="font-size:12px;padding:3px 10px">Preoperatoria</span>`
+            :m!==null
+              ?`<div class="flex ic gap8"><span style="font-size:32px;font-weight:500;color:var(--pd);line-height:1;font-family:var(--ffs)">${m===0?'&lt;1':m}</span><span class="t2">${m===1?'mes':'meses'} post-cirugía</span></div>`
+              :`<span style="font-size:15px;font-weight:500">${fdate(ev.fecha)}</span>`}
           <span class="badge ${scCls(ev.total)} mla">${ev.total}%</span>
-          ${!ev.area_x
-            ?`<button class="btn btn-sm" onclick="openAreaXEditor('${ev.id}',${JSON.stringify(ev.area_x||{}).replace(/"/g,'&quot;')})">+ Área X</button>`
-            :`<span class="badge bp">Área X ✓</span>`}
+          ${!esPreop
+            ?(!ev.area_x
+              ?`<button class="btn btn-sm" onclick="openAreaXEditor('${ev.id}',${JSON.stringify(ev.area_x||{}).replace(/"/g,'&quot;')})">+ Área X</button>`
+              :`<span class="badge bp">Área X ✓</span>`)
+            :''}
         </div>
-        ${m!==null?`<div class="t2" style="margin-bottom:10px;font-size:12px">${fdate(ev.fecha)}</div>`:''}
+        <div class="t2" style="margin-bottom:10px;font-size:12px">${fdate(ev.fecha)}</div>
         <div class="grid4" style="margin-bottom:12px">
           <div class="score-group"><div class="score-group-label">Esencial</div><div class="score-group-val" style="font-size:20px;color:${gs.esencial!==null?scCol(gs.esencial):'var(--t2)'}">${gs.esencial!==null?gs.esencial+'%':'—'}</div></div>
           <div class="score-group"><div class="score-group-label">Complementario</div><div class="score-group-val" style="font-size:20px;color:${gs.complementario!==null?scCol(gs.complementario):'var(--t2)'}">${gs.complementario!==null?gs.complementario+'%':'—'}</div></div>
@@ -898,21 +926,25 @@ async function renderHist(){
     db.from('ficha_paciente').select('fecha_cirugia').eq('paciente_id',S.cu.id).single()
   ]);
   if(!evs||!evs.length){el.innerHTML='<div class="empty">Sin evaluaciones previas</div>';return}
+  const preopId=evs[evs.length-1].id;
   el.innerHTML=evs.map(ev=>{
+    const esPreop=ev.id===preopId;
     const scored=(ev.areas||[]).filter(a=>a.score!==null);
     const gs=calcGroupScores(ev.areas||[],ev.area_x);
     const m=ficha?mesesPostCirugia(ficha.fecha_cirugia,ev.fecha):null;
     return`<div class="card">
       <div class="flex ic gap8" style="margin-bottom:10px">
-        ${m!==null
-          ?`<div style="display:flex;align-items:baseline;gap:6px">
-              <span style="font-size:36px;font-weight:500;color:var(--pd);line-height:1">${m===0?'&lt;1':m}</span>
-              <span style="font-size:13px;color:var(--t2)">${m===1?'mes':'meses'} post-cirugía</span>
-            </div>`
-          :`<span style="font-size:14px;font-weight:500">${fdate(ev.fecha)}</span>`}
+        ${esPreop
+          ?`<span class="badge ba" style="font-size:12px;padding:3px 10px">Preoperatoria</span>`
+          :m!==null
+            ?`<div style="display:flex;align-items:baseline;gap:6px">
+                <span style="font-size:36px;font-weight:500;color:var(--pd);line-height:1">${m===0?'&lt;1':m}</span>
+                <span style="font-size:13px;color:var(--t2)">${m===1?'mes':'meses'} post-cirugía</span>
+              </div>`
+            :`<span style="font-size:14px;font-weight:500">${fdate(ev.fecha)}</span>`}
         <span class="badge ${scCls(ev.total)} mla">${ev.total}%</span>
       </div>
-      ${m!==null?`<div class="t2" style="margin-bottom:10px;font-size:12px">${fdate(ev.fecha)}</div>`:''}
+      <div class="t2" style="margin-bottom:10px;font-size:12px">${fdate(ev.fecha)}</div>
       <div class="grid4" style="margin-bottom:10px">
         <div class="score-group"><div class="score-group-label">Esencial</div><div class="score-group-val" style="font-size:20px;color:${gs.esencial!==null?scCol(gs.esencial):'var(--t2)'}">${gs.esencial!==null?gs.esencial+'%':'—'}</div></div>
         <div class="score-group"><div class="score-group-label">Complementario</div><div class="score-group-val" style="font-size:20px;color:${gs.complementario!==null?scCol(gs.complementario):'var(--t2)'}">${gs.complementario!==null?gs.complementario+'%':'—'}</div></div>
