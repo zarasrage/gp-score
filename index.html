@@ -196,7 +196,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 <div class="page active" id="page-home">
   <div style="padding-top:2rem">
   <div class="flex ic" style="margin-bottom:1.75rem">
-    <div class="logo" style="margin:0"><div class="logo-mark"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div><div><div class="logo-name">GP Score</div><div class="logo-sub">González-Passi Score</div></div></div>
+    <div class="logo" style="margin:0"><div class="logo-mark"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.8"/><path d="M 12 5 A 7 7 0 1 1 5 12" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="12" r="1.5" fill="white"/><path d="M 8.5 12 L 11 14.5 L 15.5 9.5" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="logo-name">GP Score</div><div class="logo-sub">González-Passi Score</div></div></div>
     <button class="btn btn-sm lang-btn mla" onclick="setLang(LANG==='es'?'en':'es')">EN</button>
   </div>
   <div class="card" style="text-align:center;padding:3rem 2rem">
@@ -260,7 +260,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 <!-- MÉDICO -->
 <div class="page" id="page-medico">
   <div class="topbar">
-    <div class="logo" style="margin:0"><div class="logo-mark"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div><div><div class="logo-name">GP Score</div><div class="logo-sub">González-Passi</div></div></div>
+    <div class="logo" style="margin:0"><div class="logo-mark"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.8"/><path d="M 12 5 A 7 7 0 1 1 5 12" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="12" r="1.5" fill="white"/><path d="M 8.5 12 L 11 14.5 L 15.5 9.5" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="logo-name">GP Score</div><div class="logo-sub">González-Passi</div></div></div>
     <div class="flex ic gap8"><span class="t2" id="med-nl"></span><button class="btn btn-sm lang-btn" onclick="setLang(LANG==='es'?'en':'es')">EN</button><button class="btn btn-sm" onclick="doLogout()" data-i18n="salir">Salir</button></div>
   </div>
   <div class="nav">
@@ -295,7 +295,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 <!-- PACIENTE -->
 <div class="page" id="page-paciente">
   <div class="topbar">
-    <div class="logo" style="margin:0"><div class="logo-mark"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div><div><div class="logo-name">GP Score</div><div class="logo-sub">González-Passi</div></div></div>
+    <div class="logo" style="margin:0"><div class="logo-mark"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.8"/><path d="M 12 5 A 7 7 0 1 1 5 12" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="12" r="1.5" fill="white"/><path d="M 8.5 12 L 11 14.5 L 15.5 9.5" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="logo-name">GP Score</div><div class="logo-sub">González-Passi</div></div></div>
     <div class="flex ic gap8"><span class="t2" id="pac-nl"></span><button class="btn btn-sm lang-btn" onclick="setLang(LANG==='es'?'en':'es')">EN</button><button class="btn btn-sm" onclick="doLogout()" data-i18n="salir">Salir</button></div>
   </div>
   <div class="nav">
@@ -1243,7 +1243,7 @@ const TRANSLATIONS={
   es:{
     // Nav & general
     salir:'Salir', salir_eval:'← Salir', eval_completada:'Evaluación completada', dr_prefix:'Dr./a',
-    confirmar_salir:'¿Salir? Se perderá el progreso.', subtitulo_home:'Evaluación funcional de extremidad superior', actualizar_ficha:'Actualizar ficha',
+    confirmar_salir:'¿Salir? Se perderá el progreso.', subtitulo_home:'Evaluación funcional del pulgar', actualizar_ficha:'Actualizar ficha',
     inicio:'Inicio', mi_perfil:'Mi perfil', historial:'Historial',
     volver:'← Volver', crear_cuenta:'Crear nueva cuenta', cerrar:'Cerrar',
     guardar:'Guardar', cancelar:'Cancelar', vincular:'Vincular', cargando:'Cargando...',
@@ -1314,7 +1314,7 @@ const TRANSLATIONS={
   },
   en:{
     salir:'Sign out', salir_eval:'← Exit', eval_completada:'Assessment completed', dr_prefix:'Dr.',
-    confirmar_salir:'Exit? Progress will be lost.', subtitulo_home:'Upper extremity functional assessment', actualizar_ficha:'Update record',
+    confirmar_salir:'Exit? Progress will be lost.', subtitulo_home:'Thumb functional assessment', actualizar_ficha:'Update record',
     inicio:'Home', mi_perfil:'My profile', historial:'History',
     volver:'← Back', crear_cuenta:'Create account', cerrar:'Close',
     guardar:'Save', cancelar:'Cancel', vincular:'Link', cargando:'Loading...',
