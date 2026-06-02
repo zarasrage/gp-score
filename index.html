@@ -119,8 +119,6 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .act-row{padding:14px 0;border-bottom:1px solid var(--b2)}
 .act-row:last-child{border-bottom:none}
 .act-name{font-size:15px;margin-bottom:8px;font-weight:500;color:var(--t)}
-.act-obs{width:100%;padding:7px 10px;border:1px solid var(--b);border-radius:var(--rm);font-size:14px;background:var(--s2);color:var(--t);margin-top:6px;font-family:var(--ff)}
-.act-obs:focus{outline:none;border-color:var(--pm)}
 
 /* Area header */
 .area-header{display:flex;align-items:center;gap:12px;margin-bottom:1.1rem;padding:.9rem 1rem;background:var(--pl);border-radius:var(--rm);border:1px solid rgba(21,122,90,.15)}
@@ -503,11 +501,11 @@ const SUPA_KEY='sb_publishable_b2XyflL3o_BmCdUWDF7Mow_ET9fYzid';
 const db=supabase.createClient(SUPA_URL,SUPA_KEY);
 
 const AREAS=[
-  {id:1,num:"I",name:"Actividades domésticas",type:"scale",acts:["Usar utensilios de cocina","Cortar con elemento cortante","Tomar un plato / montar mesa","Tomar un vaso o botella","Abrir tapa rosca","Tomar un sartén","Tomar hervidor de agua","Usar electrodoméstico (batidora manual)","Almacenar alimentos"]},
-  {id:2,num:"II",name:"Higiene y cuidado personal",type:"scale",acts:["Lavado de dientes","Peinado","Afeitarse / depilarse","Secado con toalla","Uso de secador de pelo","Pintura de uñas","Corte de uñas","Maquillaje","Usar sombrero"]},
-  {id:3,num:"III",name:"Habitualidad",type:"scale",acts:["Control remoto / sensores electrónicos","Teléfono: escribir / tomar","Tomar volante / cambio de marcha","Cinturón de seguridad","Tomarse en microbús / metro","Sujetar un libro","Llevar bolsa de supermercado","Cargar productos en supermercado","Fumar un cigarrillo","Tomar fotografía","Enchufar un equipo"]},
+  {id:1,num:"I",name:"Actividades domésticas",type:"scale",acts:["Usar utensilios de cocina","Cortar con elemento cortante","Tomar un plato / montar mesa","Tomar un vaso o botella","Abrir tapa rosca","Tomar un sartén","Tomar hervidor de agua"]},
+  {id:2,num:"II",name:"Higiene y cuidado personal",type:"scale",acts:["Lavado de dientes","Peinado","Afeitarse / depilarse","Secado con toalla","Uso de secador de pelo","Pintura de uñas"]},
+  {id:3,num:"III",name:"Habitualidad",type:"scale",acts:["Control remoto / sensores electrónicos","Teléfono: escribir / tomar","Tomar volante / cambio de marcha","Cinturón de seguridad","Tomarse en microbús / metro","Sujetar un libro","Llevar bolsa de supermercado"]},
   {id:4,num:"IV",name:"Actividad laboral",type:"laboral"},
-  {id:5,num:"V",name:"Deportes y actividad física",type:"scale",acts:["Deportes con implementos","Pilates / yoga","Pádel / tenis / golf / ski","Artes marciales","Uso de pesas / barras","Básquet / vóley","Bicicleta / scooter","Montar a caballo","Bastón de trekking","Jugar pool / ping pong","Uso de armas","Otro deporte"]},
+  {id:5,num:"V",name:"Deportes y actividad física",type:"scale",acts:["Deportes con implementos","Pilates / yoga","Pádel / tenis / golf / ski","Artes marciales","Uso de pesas / barras","Básquet / vóley","Bicicleta / scooter"]},
   {id:6,num:"VI",name:"Hobbies",type:"scale",acts:["Escribir con lápiz","Pintar","Esculpir / tallar","Armar puzzle / LEGO","Usar cartas de naipes","Juegos con piezas (ajedrez, etc.)","Uso de herramientas"]},
   {id:7,num:"VII",name:"Situación de vida",type:"scale",acts:["Situación económica","Situación social / amistades / entorno","Vivienda / hogar","Familia / compañía","Vecindad / seguridad","Vacaciones / distracciones"]},
   {id:8,num:"VIII",name:"Enfermedades asociadas",type:"scale",acts:["Psiquiátricas","Metabólicas","Hormonales","Oncológicas","Músculo esqueléticas","Otra enfermedad"]},
@@ -1023,7 +1021,8 @@ function mesesPostCirugia(fechaCirugia, fechaEval){
 // ---- SCORES ----
 function calcAreaScore(a,d){
   if(a.type!=='scale')return null;
-  const vals=d.vals.filter(v=>v!==null&&v>=1);
+  const vals=[...d.vals.filter(v=>v!==null&&v>=1),
+              ...(d.extraActs||[]).filter(ac=>ac.escala!==null&&ac.escala>=1).map(ac=>ac.escala)];
   if(!vals.length)return null;
   return Math.round((vals.reduce((s,v)=>s+v,0)/vals.length)*20);
 }
@@ -1073,7 +1072,7 @@ function calcAreasForSave(data){
 // ---- EVALUACIÓN ----
 function startEval(){
   S.ev={aIdx:0,data:AREAS.map(a=>{
-    if(a.type==='scale')return{vals:new Array(a.acts.length).fill(null),obs:new Array(a.acts.length).fill('')};
+    if(a.type==='scale')return{vals:new Array(a.acts.length).fill(null),extraActs:[]};
     if(a.type==='laboral')return{activities:[{desc:'',escala:null}]};
     if(a.type==='artroplastia')return{};
     return{};
@@ -1083,7 +1082,7 @@ function startEval(){
 
 function isAreaDone(i){
   const a=AREAS[i],d=S.ev.data[i];
-  if(a.type==='scale')return d.vals.some(v=>v!==null);
+  if(a.type==='scale')return d.vals.some(v=>v!==null)||(d.extraActs&&d.extraActs.some(ac=>ac.escala!==null));
   if(a.type==='laboral')return d.activities.some(ac=>ac.escala!==null||ac.desc.trim());
   if(a.type==='artroplastia')return false;
   return false;
@@ -1116,7 +1115,7 @@ function renderArea(){
   const isSecondLast=i===AREAS.length-2;
   document.getElementById('btn-next').textContent=(isSecondLast||i===AREAS.length-1)?t('finalizar'):t('siguiente');
 
-  const EF=t('escala_full'), EL=t('escala_legend'), OBS=t('obs_opcional');
+  const EF=t('escala_full'), EL=t('escala_legend');
   const NOAPL=t('no_aplica'), LABDESC=t('laboral_desc'), SOLOMED=t('solo_medico');
   let html=`<div class="area-header">
     <div class="area-num">${a.num}</div>
@@ -1127,13 +1126,24 @@ function renderArea(){
 
   if(a.type==='scale'){
     html+=`<div class="scale-legend">${scaleLegendHTML()}</div>`;
-    html+=`<div class="card">${a.acts.map((act,j)=>`
+    html+=`<div class="card">`;
+    html+=a.acts.map((act,j)=>`
       <div class="act-row">
         <div class="act-name">${act}</div>
         <div class="scale-wrap">${scaleBtns(d.vals,j,'setVal')}</div>
         <div style="font-size:11px;color:var(--t2);min-height:16px;margin-bottom:2px">${d.vals[j]!==null?EF[d.vals[j]]:''}</div>
-        <input class="act-obs" placeholder="${OBS}" value="${(d.obs[j]||'').replace(/"/g,'&quot;')}" oninput="setObs(${j},this.value)">
-      </div>`).join('')}</div>`;
+      </div>`).join('');
+    if(d.extraActs&&d.extraActs.length)html+=(d.extraActs.map((act,j)=>`
+      <div class="act-row">
+        <div class="flex ic gap8" style="margin-bottom:6px">
+          <input placeholder="${t('desc_actividad')}" value="${(act.desc||'').replace(/"/g,'&quot;')}" oninput="setScaleActDesc(${j},this.value)" style="flex:1;margin:0">
+          <button class="btn btn-sm btn-danger" onclick="removeScaleAct(${j})">${t('eliminar')}</button>
+        </div>
+        <div class="scale-wrap">${scaleBtnsExtra(act,j)}</div>
+        <div style="font-size:11px;color:var(--t2);min-height:16px;margin-bottom:2px">${act.escala!==null?EF[act.escala]:''}</div>
+      </div>`).join(''));
+    html+=`<button class="btn btn-sm btn-p" style="margin-top:12px" onclick="addScaleAct()">${t('agregar_act')}</button>`;
+    html+=`</div>`;
 
   } else if(a.type==='laboral'){
     html+=`<div class="card">`;
@@ -1164,7 +1174,10 @@ function renderArea(){
 }
 
 function setVal(j,v){S.ev.data[S.ev.aIdx].vals[j]=v;renderAreaNav();renderArea()}
-function setObs(j,v){S.ev.data[S.ev.aIdx].obs[j]=v}
+function addScaleAct(){S.ev.data[S.ev.aIdx].extraActs.push({desc:'',escala:null});renderArea()}
+function removeScaleAct(j){S.ev.data[S.ev.aIdx].extraActs.splice(j,1);renderAreaNav();renderArea()}
+function setScaleActDesc(j,v){S.ev.data[S.ev.aIdx].extraActs[j].desc=v}
+function setScaleActEscala(j,v){S.ev.data[S.ev.aIdx].extraActs[j].escala=v;renderAreaNav();renderArea()}
 function addLabAct(){S.ev.data[S.ev.aIdx].activities.push({desc:'',escala:null});renderAreaNav();renderArea()}
 function removeLabAct(j){if(S.ev.data[S.ev.aIdx].activities.length>1){S.ev.data[S.ev.aIdx].activities.splice(j,1);renderAreaNav();renderArea()}}
 function setLabDesc(j,v){S.ev.data[S.ev.aIdx].activities[j].desc=v}
@@ -1401,6 +1414,15 @@ function scaleBtns(vals, j, onclick, startFrom0=true){
   return out;
 }
 
+function scaleBtnsExtra(act, j){
+  const EF=t('escala_full');
+  let out='';
+  for(let v=0;v<=5;v++){
+    const sel=act.escala===v?SC[v]:'';
+    out+=`<button class="sc-btn ${sel}" onclick="setScaleActEscala(${j},${v})" title="${EF[v]}">${v}</button>`;
+  }
+  return out;
+}
 function scaleBtnsLaboral(act, j){
   const EF=t('escala_full');
   let out='';
@@ -1478,4 +1500,3 @@ function setLang(lang){
 </script>
 </body>
 </html>
-
